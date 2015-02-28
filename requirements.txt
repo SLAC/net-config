@@ -1,0 +1,7 @@
+ordereddict>=1.1
+argparse
+daemon
+PyYAML 
+pexpect
+dateutil
+amqplib

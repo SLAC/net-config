@@ -1,0 +1,26 @@
+! simple template for setting up the first port and tftp the system image
+
+[echo=Setting up the port for tftp...]
+conf t
+int vlan 1
+ ! ip address 10.0.0.10 255.255.255.0 
+ ip address 172.18.209.6 255.255.255.0
+ no shut
+ip default-gateway 172.18.209.1
+end
+
+
+[echo=Updating firmware...]
+[cmd=system.firmware.update()]
+[echo=... done updating firmware]
+
+[echo=Clearing setup configuration...]
+conf t
+ int vlan 1
+   ! no ip address 10.0.0.10 255.255.255.0
+   no ip address 172.18.209.6 255.255.255.0
+ shut
+end
+[echo=complete!]
+
+

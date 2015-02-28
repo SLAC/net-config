@@ -1,0 +1,16 @@
+[echo=Setting up interfaces...]
+conf t
+
+interface Fa 0
+  no shut
+
+interface BVI1
+ ip address 10.0.0.2 255.255.255.0
+ no ip route-cache
+ no shut
+
+end
+
+[echo=Upgrading firmware...]
+[cmd=system.firmware.upgrade()]
+[echo=success!]

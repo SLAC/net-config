@@ -1,0 +1,288 @@
+profile_cache: /afs/slac.stanford.edu/g/scs/net/projects/net-config/var/profile.cache
+
+defaults:
+    
+    campus:
+        enable_password: &CAMPUS_ENABLE_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/campus/enable.password
+        enable_legacy_password: &CAMPUS_ENABLE_LEGACY_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/campus/enable.password.old
+        login_password: &CAMPUS_LOGIN_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/campus/login.password
+        login_legacy_password: &CAMPUS_LOGIN_LEGACY_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/campus/login.password.old
+    mcc:
+        enable_password: &MCC_ENABLE_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/mcc/enable.password
+    wireless:
+        login_password: &WIRELESS_LOGIN_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/wireless/login.password
+    ib:
+        login_password: &IB_LOGIN_PASSWORD /afs/slac.stanford.edu/g/scs/net/devices/passwords/ib/login.password
+    
+    
+    default: &DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        probeable:  True
+        connector_type: ssh
+        port: 22
+        # connector_options: " -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no "
+        device_type: cisco_ios
+
+    legacy: &LEGACY
+        password: *CAMPUS_LOGIN_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        probeable:  False
+        port: 22
+        connector_type: ssh
+        # connector_options: " -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no "
+        device_type: cisco_ios
+        
+###
+# This defines the possible 'profiles' that allows one to log onto a device
+# a device may match one or many profiles, and probing for the appropriate profile is attempted
+# each profile allows the following key/values pairs
+#   probeable      :  1  # allow probeing to use this profile
+#   password       :  <str>|<file>:
+#   enable_password:  <str>|<file>:
+#   device_type    :  ios|f5|..:
+#   login_timeout  :  <int>   # max time for log in (attempted 3 times)
+#   connector_type :  ssh|telnet:
+#   username       :  <str>
+#   prompt_output_wait :  <float>  # amount of time to wait to determine if we have output
+###
+profiles: 
+
+    ios-legacy:
+        <<: *LEGACY
+        device_type:  cisco_ios
+
+    ios-old: &old_profile
+        <<: *LEGACY
+        password: *CAMPUS_LOGIN_LEGACY_PASSWORD 
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+
+    ios:
+        <<: *DEFAULT
+        device_type:  cisco_ios
+
+    # ciscosg:
+    #     <<: *DEFAULT
+    #     device_type:  cisco_sg
+
+    ios-xl:
+        <<: *DEFAULT
+        password: *MCC_ENABLE_PASSWORD
+        device_type: cisco_ios
+        port: 23
+        connector_type: telnet
+
+    ios-wireless:
+        <<: *DEFAULT
+        device_type: cisco_wireless
+        login_timeout: 8
+        
+    netstaging-wireless:
+        <<: *DEFAULT
+        probeable: False
+        password: *WIRELESS_LOGIN_PASSWORD
+        enable_password: 
+        device_type: cisco_wireless
+        username: netdev
+        login_timeout: 5
+        connector_type: telnet
+        prompt_output_wait: 1
+
+    netstaging-ios:
+        <<: *LEGACY
+        probeable: False
+        device_type: cisco_ios
+        connector_type: telnet
+        login_timeout: 10
+        prompt_output_wait: 0.5
+
+    ios-forsythe:
+        <<: *DEFAULT
+        device_type: cisco_ios
+
+    topspin:
+        <<: *DEFAULT
+        device_type: cisco_topspin
+
+    topspin-old:
+        <<: *DEFAULT
+        password: *IB_LOGIN_PASSWORD
+        enable_password: null
+        device_type: cisco_topspin
+        username: super
+
+    bigip:
+        <<: *DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        device_type: f5_bigpipe
+        username: root
+        force_passwords: True
+
+    bigiptmsh:
+        <<: *DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        device_type: f5_tmsh
+        username: root
+        force_passwords: True
+
+    asa:
+        <<: *DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        device_type: cisco_asa
+        username: net-admin
+        # needed as whatever user i use, only these passwords will work
+        force_passwords: True
+
+    digi-mcc:
+        <<: *DEFAULT
+        probeable: False
+        password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/mcc/terminal.server.password
+        enable_password: 
+        device_type: digi_ts
+        connector_options: -o "ProxyCommand ssh mcclogin.slac.stanford.edu /usr/bin/nc -w 1 %%h 22"
+        username: root
+        login_timeout: 10
+
+    digi:
+        <<: *DEFAULT
+        probeable: False
+        password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: 
+        device_type: digi_ts
+        username: root
+        login_timeout: 10
+
+    console-ios:
+        <<: *DEFAULT
+        probeable: False
+        password: *CAMPUS_LOGIN_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        device_type: cisco_ios
+        connector_type: screen
+        port: /dev/ttyS0
+
+    netstaging:
+        <<: *DEFAULT
+        prime: True
+        probeable: False
+        password: *CAMPUS_LOGIN_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        device_type: cisco_ios
+        connector_type: telnet
+
+    ts-ios:
+        <<: *DEFAULT
+        probeable:  False
+        password: *CAMPUS_LOGIN_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        device_type: cisco_ios
+        connector_type: telnet
+
+    console-wireless:
+        <<: *DEFAULT
+        probeable: False
+        password: null
+        enable_password: Cisco
+        device_type: cisco_wireless
+        connector_type: screen
+        port: /dev/ttyS0
+
+    dell:
+        # eg swh-farm04a
+        <<: *DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        device_type: dell
+        connector_type: ssh
+        login_timeout: 10
+        
+    ios-ssrl:
+        <<: *DEFAULT
+        password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/ssrl/login.password
+        enable_password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/ssrl/enable.password
+        device_type: cisco_ios
+        connector_type: ssh
+        probeable: False
+
+    arista-pcdsn:
+        # eg swh-pcdsn01, 03
+        <<: *DEFAULT
+        password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/pcdsn/login.password
+        enable_password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/pcdsn/enable.password
+        device_type: arista
+        username: net-admin
+        connector_type: ssh
+        login_timeout: 20
+        force_passwords: True
+
+    pcdsn:
+        <<: *DEFAULT
+        password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/pcdsn/login.password.cisco
+        # enable_password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: *CAMPUS_ENABLE_LEGACY_PASSWORD
+
+    arista:
+        # eg swh-farm01a
+        <<: *DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        device_type: arista
+
+    nexus:
+        <<: *DEFAULT
+        password: *CAMPUS_ENABLE_PASSWORD
+        enable_password: 
+        device_type: cisco_nexus
+        connector_type: ssh
+
+    # nexus1k:
+    #     <<: *DEFAULT
+    #     password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/campus/enable.password
+    #     enable_password: 
+    #     device_type: cisco_nexus_1k
+    #     connector_type: ssh
+
+    # h3c:
+    #     <<: *DEFAULT
+    #     password: hppass
+    #     enable_password: 
+    #     device_type: h3c
+    #     username: hp
+    #     connector_type: ssh
+
+    bluecoat:
+        <<: *DEFAULT
+        password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/bluecoat/login.password
+        enable_password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/bluecoat/login.password
+        username: admin
+        connector_type: ssh
+        device_type: bluecoat_sg
+        force_passwords: True
+
+    # asacx:
+    #     <<: *DEFAULT
+    #     username: admin
+    #     password: /afs/slac.stanford.edu/g/scs/net/devices/passwords/campus/enable.password
+    #     device_type: cisco_asa
+
+    net-admin:
+        password: *CAMPUS_LOGIN_PASSWORD
+        enable_password: *CAMPUS_ENABLE_PASSWORD
+        username: net-admin
+        connector_type: ssh
+        device_type: cisco_ios
+
+    pan:
+        username: admin
+        password: *CAMPUS_ENABLE_PASSWORD 
+        connector_type: ssh
+        force_passwords: True
+        device_type: palo_alto_networks
+    
+    wlc:
+        username: root
+        password: *CAMPUS_ENABLE_PASSWORD
+        device_type: cisco_wlc
+        connect_type: ssh
+        force_passwords: True

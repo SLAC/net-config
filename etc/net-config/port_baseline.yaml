@@ -1,0 +1,541 @@
+DEFINITIONS: 
+    
+    common: &common_baseline
+        security: &common_security
+            # TODO: disable ports?
+            violation: restrict
+            max:   5
+            # TODO: if we have max=1, and the port sets to notconnect, does it reset?
+            aging-time: 2
+            aging-type: inactivity
+        logging: &common_access_logging
+            link-status:    True
+            bundle-status:  True
+            trunk-status:   True
+        # used to clean up other modes
+        type:   access
+        portnoneg:  True
+        bpduguard:  True
+        portfast:   True
+        cdp:        False
+        lldp:
+            transmit:   False
+            receive:   False
+        voice_vlan: False
+        # TODO: err-disabled configuration?
+        # dhcpsnooping? source guard? uplink requirements for dhcpsnooping
+        # farm16? 1? fermi? storm control
+
+    common-voice: &voice_baseline
+        <<: *common_baseline
+        lldp:   True
+        voice_vlan: True
+        
+
+
+#######################################################################
+# a baseline is a defintion of what characteristics should apply to a 
+# port of a certain context. for example, if a port has a context where
+# the vlan_name matches a a certain regular expression, then its 
+# characteristics should match that in the baseline. 
+# characteristics are defined by key-value pairs. certain complex
+# characteristics may be defined as a string, integer, boolean, None, 
+# hash/dict (of key-value pairs), or an array.
+# in the case of a None value, it means that it doesn't matter.
+#######################################################################
+BASELINES:
+
+
+    # note that as ports may match many baselines, we define a priority
+    # of each baseline: the higher up on this list it is, the higher its
+    # priority.
+    # so for example, a campus port with a phone should show up 
+    # before that one as the only difference is that a campus with phone
+    # has a context of a vlan for the phone
+    # similarily, disabled port should have highest priority so that 
+    # they are cleaned up
+    
+    
+    # - DISABLED-NO-ALIAS:
+    #     context:
+    #         state: False
+    #         alias: ''
+    #         type: access
+    #     baseline:
+    #         <<: *common_baseline
+    #         # if there's no alias on the port and it's disabled, then defaul the vlan
+    #         vlan: 1
+
+
+    ###
+    # Access points
+    ###
+
+
+    - WLC-ACCESS-POINT:
+        context:
+            type:   access
+            alias:  ^.*(ap|AP)-.*$
+        baseline:
+            security:
+                violation: restrict
+                max:   1
+                aging-time: 2
+                aging-type: inactivity
+            logging: *common_access_logging
+            type:   access
+            portnoneg:  True
+            bpduguard:  True
+            portfast:   True
+            cdp:        True
+            lldp:
+                transmit:   False
+                receive:    False
+            voice_vlan: False
+
+
+    - ACCESS-POINT:
+        context:
+            type:   trunk
+            alias:  ^.*((ap|AP)-|(w|W)alkup|Wlkup).*$
+        baseline:
+            logging:
+                trunk-status:   True
+                link-status:    True
+                bundle-status:  True
+            cdp:    True
+            lldp:   
+                transmit:   False
+                receive:    False
+
+        
+    - CAMPUS-ACCESSPOINT-OUT:
+        context:
+            type: access
+            alias: .* X\d+.*
+            vlan_name: ^VISITOR-AP.*$
+        baseline:
+            cdp:    False
+            lldp:
+                transmit:  True
+                receive:  True
+            portnoneg: True
+            bpduguard: False
+            portfast:   False
+            logging:
+                trunk-status:   True
+                link-status:    True
+                bundle-status:  True
+                
+    - CAMPUS-ACCESSPOINT-IN:
+        context:
+            type: private-vlan host
+            # not cross over ports
+            alias:  .* X\d+.*
+        baseline:
+            type:   private-vlan host
+            cdp:    False
+            lldp:
+                transmit:  True
+                receive:  True
+            vlan:
+                - 301
+                - 303
+            bpduguard:  False
+            portfast:   False
+            logging:
+                trunk-status:   True
+                link-status:    True
+                bundle-status:  True
+
+    ###
+    # Uplinks
+    ###
+
+    - ROUTED-UPLINK:
+        context:
+            type:   routed
+        baseline:
+            {}
+
+    - DISABLED-LAYER2-UPLINK:
+        context:
+            type: trunk
+            state: False
+        baseline:
+            {}
+
+    - LAYER2-UPLINK:
+        context:
+            type:   trunk
+        baseline:
+            logging:
+                trunk-status:   True
+                link-status:    True
+                bundle-status:  True
+            native_vlan:    3
+            cdp:    True
+            lldp:   
+                transmit:   False
+                receive:    False
+            dhcp_snooping: trust
+            # TODO: native vlans
+
+        
+    ###
+    # Visitor
+    ###
+
+    - CAMPUS-VISITOR:
+        context:
+            type: private-vlan host
+            # not cross over ports
+            alias:  .*(?! X\d+).*
+        baseline:
+            <<: *common_baseline
+            type:   private-vlan host
+            vlan:
+                - 301
+                - 303
+            speed: 10,100
+            autoneg: True
+            security:
+                <<: *common_security
+                aging-time: 1
+            
+    - PROMISCIOUS-VISITOR:
+        # stupid apple tv
+        context:
+            type: private-vlan promiscuous
+        baseline:
+            portnoneg: True
+
+    ###
+    # Facilities
+    ###
+    
+    - POWER:
+        context:
+            type: access
+            vlan_name:  ^.*POWER$
+        baseline:
+            <<: *common_baseline
+            
+    - WATER:
+        context:
+            type:   access
+            vlan_name: ^LCW$
+        baseline:
+            <<: *common_baseline
+    - WATER-PRIVATE:
+        context:
+            type:   access
+            vlan_name: ^PEL-PRIVATE$
+        baseline:
+            <<: *common_baseline
+    - WATER-S9000:
+        context:
+            type:   access
+            vlan_name: ^S9000-DCS$
+        baseline:
+            <<: *common_baseline
+        
+    - HVAC:
+        context:
+            type:   access
+            vlan_name:  .*HVAC$
+        baseline:
+            <<: *common_baseline
+    - HVAC-LINAC:
+        context:
+            type:   access
+            vlan_name:  .*HVAC-ACC$
+        baseline:
+            <<: *common_baseline
+
+    ###
+    # physical site security
+    ###
+            
+    - SITESEC-CAM:
+        context:
+            type:   access
+            vlan_name:  ^.*SITESEC-CAM$
+        baseline:
+            <<: *common_baseline
+            
+    - SITESEC-CTRL:
+        context:
+            type:   access
+            vlan_name:  ^.*SITESEC-CTRL$
+        baseline:
+            <<: *common_baseline
+    
+    - SITESEC-SERVER-CAM:
+        context:
+            type:   access
+            vlan_name:  ^SITESEC-SRV-CAM$
+        baseline:
+            <<: *common_baseline
+
+    - SITESEC-SERVER-CTRL:
+        context:
+            type:   access
+            vlan_name:  ^SITESEC-SRV-CTRL$
+        baseline:
+            <<: *common_baseline
+
+    ###
+    # Data center ports
+    ###
+    
+    - FARM:
+        context:
+            type: access
+            vlan_name: ^FARM.*
+            device: ^(swh|rtr)-farm.*$
+        baseline:
+            cdp:    False
+            lldp:
+                transmit: False
+                receive: False
+            portnoneg: True
+            bdpdugard: True
+            portfast:   True
+            storm-control:
+                # what happens when exceed?
+                # inbound or outbound?
+                broadcast:  0.10
+                multicast:  0.10
+                unicast:    False
+            # TODO: Unknown unicast?
+            # no unknown unicast? 6500 breaks?
+
+    - DEVCTL:
+        context:
+            alias:  ^((?!DEVCTL LOOP).)*$
+            type:   access
+            vlan_name:  DEVCTL-(CONSOLE|B050|PULSE|PCDSN|KAVLI|IR2)
+        baseline:
+            <<: *common_baseline
+    
+    - WINMGMT:
+        context:
+            type:   access
+            vlan_name: WINMGMT-(DRAC|STOR)
+        baseline:
+            <<: *common_baseline
+            
+    - WINMGMT-DEPRECATED:
+        context:
+            type: access
+            vlan_name: FW-WINMGMT
+        baseline:
+            <<: *common_baseline
+    
+    - B050-WCRACKS:
+        context:
+            type:   access
+            vlan_name: B050-WCRACKS
+        baseline:
+            <<: *common_baseline
+            
+    - SWITCH_OOB:
+        context:
+            type: access
+            vlan_name: NETMGMT-FARM
+        baseline:
+            <<: *common_baseline
+            cdp: True
+    ###
+    # Experimental ports
+    ###
+    
+    - LCLSDEV:
+        context:
+            type:   access
+            vlan_name:  ^LCLSDEV$
+        baseline:
+            {}
+            
+    - LCLSIOC:
+        context:
+            type:   access
+            vlan_name:  ^LCLSIOC.*$
+        baseline:
+            {}
+
+    - GLAST-ISOC:
+        context:
+            type:   access
+            vlan_name:  ^GLAST-ISOC$
+        baseline:
+            {}
+
+    # enabled but not configured
+    - BLANK:
+        context:
+            type:   access
+            vlan_name: default
+        baseline:
+            <<: *common_baseline
+    
+    
+    - DISABLED-WITH-PHONE:
+        context:
+            state:  False
+            type:   access
+            voice_vlan_name:    -VOICE$
+        baseline:
+            <<: *voice_baseline
+    
+    - DISABLED:
+        context:
+            state:  False
+            type:   access
+        baseline:
+            <<: *common_baseline
+            
+    - CAMPUS-PUBLIC-WITH-PHONE:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-PUBLIC$
+            voice_vlan_name:    -VOICE$
+        baseline: 
+            <<: *voice_baseline
+
+    - CAMPUS-PUBLIC:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-PUBLIC$
+        baseline: 
+            <<: *common_baseline
+
+    - CAMPUS-IFZLITE-WITH-PHONE:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-IFZLITE$
+            voice_vlan_name:    -VOICE$
+        baseline: 
+            <<: *voice_baseline
+
+    - CAMPUS-IFZLITE:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-IFZLITE$
+        baseline: 
+            <<: *common_baseline
+  
+    - CAMPUS-PRIVATE-WITH-PHONE:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-PRIVATE$
+            voice_vlan_name:    -VOICE$
+        baseline: 
+            <<: *voice_baseline
+
+    - CAMPUS-PRIVATE:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-PRIVATE$
+        baseline:
+            <<: *common_baseline
+
+    - CAMPUS-PRINTER:
+        context:
+            type:   access
+            vlan_name:  ^B\d{3}.*-PRINTER$
+        baseline: 
+            <<: *common_baseline
+            voice_vlan: False
+
+    - CAMPUS-BSD-WITH-PHONE:
+        context:
+            type:   access
+            vlan_name:  ^BSD$
+            voice_vlan_name:    -VOICE$
+        baseline: 
+            <<: *voice_baseline
+    
+    - CAMPUS-BSD:
+        context:
+            type:   access
+            vlan_name: BSD
+        baseline: 
+            <<: *common_baseline
+    
+    - DISABLED-CAMPUS-PUB-DEPRECATED:
+        context:
+            type:   access
+            vlan_name:  ^PUB\d+$
+            state: False
+        baseline:
+            <<: *common_baseline
+
+    - DISABLED-CAMPUS-KAVLI-DEPRECATED:
+        context:
+            type:   access
+            vlan_name:  ^KAVLI$
+            state: False
+        baseline:
+            <<: *common_baseline
+        
+    - CAMPUS-PUB-DEPRECATED:
+        context:
+            type:   access
+            vlan_name:   ^PUB\d+$
+        baseline:
+            <<: *common_baseline
+
+    - CAMPUS-KAVLI-DEPRECATED:
+        context:
+            type:   access
+            vlan_name:  ^KAVLI$
+        baseline:
+            <<: *common_baseline
+    
+    # WIG group
+    - CAMPUS-ADMIN:
+        context:
+            type:   access
+            vlan_name:  ^.*-WINADMIN$
+        baseline:
+            <<: *common_baseline
+
+
+
+#######################################################################
+# Custom defined exceptions to the baseline policies defined above
+# put unique port configurations here
+# <device>:
+#     <port>:
+#         <baseline definitions>
+#######################################################################
+EXCEPTIONS:
+    
+    swh-b050f2-power:
+        # for some reason this port has many mac addresses on it
+        Fa0/25:
+            <<: *common_baseline
+            security:
+                <<: *common_security
+                max:   10
+                
+                
+    swh-b035-lc01:
+        # stupid deprecated LCW network (unmanaged switches)
+        Gi1/0/1: &LCW_UPLINKS
+            type: access
+            bpduguard:  False
+            portfast:   False
+            logging:
+                link-status:    True
+                bundle-status:  True
+                trunk-status:   True
+            cdp:        True
+            lldp:
+                transmit:   False
+                receive:   False
+            voice_vlan: False
+        Gi1/0/2: 
+            <<: *LCW_UPLINKS

@@ -1,0 +1,9 @@
+file_store:
+    path: /afs/slac.stanford.edu/g/scs/net/configs/
+
+FROM: 'netmaint@slac.stanford.edu'
+SUBJECT: 'net-config.py backup report'
+SMTP_SERVER: 'smtp.slac.stanford.edu'
+
+REPORT_DIR: 
+    - /afs/slac.stanford.edu/g/scs/net/configs/reports/

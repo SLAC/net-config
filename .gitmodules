@@ -1,0 +1,3 @@
+[submodule "lib/slac_utils"]
+	path = lib/slac_utils
+	url = git@github.com:SLACNationalAcceleratorLaboratory/slac_utils.git

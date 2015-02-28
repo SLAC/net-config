@@ -1,0 +1,12 @@
+[echo=Setting up interfaces...]
+conf t
+
+interface {{ PORT }}
+  switch
+  switch mode trunk
+  switch trunk allowed vlans {{ VLANS }}
+  switch trunk
+  no shut
+
+end
+

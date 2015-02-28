@@ -1,0 +1,1 @@
+ptolemy cando devicelist --config=/afs/slac.stanford.edu/g/scs/net/netmon/lanmon/ptolemy/conf/ptolemy-maintenance.xml | sed 's:.slac.stanford.edu::g' | grep -v ts- | grep -v ssrl > /afs/slac.stanford.edu/g/scs/net/net-config/device.list

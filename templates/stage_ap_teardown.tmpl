@@ -1,0 +1,5 @@
+ip default-gateway {{ staging_gateway }}
+int vlan 1
+ no ip address {{ staging_ip }} {{ staging_netmask }}
+ shut
+ end

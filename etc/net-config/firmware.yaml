@@ -1,0 +1,208 @@
+###
+# server details of where to get the firmware images from (relative to device)
+###
+server:
+    
+    firmware_path: ${protocol}://${username}@${host}/${relative_path}/${path}/
+    host: 172.18.192.17
+    relative_path: net/bin
+    protocol: ftp
+    username: anonymous
+    destination: 'flash:'
+
+
+###
+# each hardware model type should have one or more groups
+# that define the image and release to use for that group name
+# example group names are 'production', 'campus', 'data center' etc.
+###
+# model:
+#   group_name:
+#       image: <image_name>
+#       release: <version>
+firmware:
+
+    WS-C2960-8TC-L:
+        production: &c2960-production
+            path: 2900
+            image: c2960-lanbasek9-m
+            release: 12.2(58)SE2
+        mcc: 
+            path: 2900
+            image: c2960-lanbasek9-m
+            release: 12.2(55)SE8
+            
+
+    WS-C2960-48TT-L:
+        production: *c2960-production
+
+
+    WS-C3750-24TS:
+        production: &c3750-production
+            path: 3700
+            image: c3750-ipbasek9-m
+            release: 12.2(58)SE2
+        campus: *c3750-production 
+        mcc: &c3750-mcc
+            # recommended for non-G's and X's
+            path: 3700
+            image: c3750-ipbasek9-m
+            file_image: c3750-ipbaselmk9
+            release: 12.2(55)SE8
+
+    WS-C3750-24P: 
+        production: *c3750-production 
+        campus: *c3750-production 
+        mcc: *c3750-mcc
+
+    WS-C3750-24PS-S:
+        production: *c3750-production
+        campus: *c3750-production 
+        mcc: *c3750-mcc
+
+    WS-C3750-48TS:
+        production: *c3750-production
+        campus: *c3750-production 
+        mcc: *c3750-mcc
+
+
+    WS-C3750V2-24PS:
+        production: *c3750-production
+        campus: *c3750-production 
+        mcc: *c3750-mcc
+
+    WS-C3750G-24TS-1U:
+        production: *c3750-production
+        campus: *c3750-production 
+        mcc: *c3750-mcc
+        vrf:
+            release: 122-44.SE2
+            image: c3750-ipbasek9-m
+            path: 3700
+
+    WS-C3750G-12S:
+        production: *c3750-production
+        campus: *c3750-production 
+        mcc: *c3750-mcc
+        
+    WS-C3750X-24P:
+        production: &c3750e-production
+            image: c3750e-universalk9-m
+            path: 3700
+            release: 12.2(58)SE2
+        campus: *c3750e-production
+        mcc: &c3750e-mcc
+            image: c3750e-universalk9-m
+            path: 3700
+            release: 12.2(55)SE8
+
+            
+    WS-C3750X-48P:
+        production: *c3750e-production
+        campus: *c3750e-production
+        mcc: *c3750e-mcc
+    WS-C3750X-48:
+        production: *c3750e-production
+        campus: *c3750e-production
+        mcc: *c3750e-mcc
+    WS-C3750X-24:
+        production: *c3750e-production
+        campus: *c3750e-production
+        mcc: *c3750e-mcc
+        
+    WS-C3750E-24PD:
+        production: *c3750e-production
+        campus: *c3750e-production
+        mcc: *c3750e-mcc
+    WS-C3750E-24TD:
+        production: *c3750e-production
+        campus: *c3750e-production
+        mcc: *c3750e-mcc
+
+    WS-C3550-24:
+        production: &c3550-production
+            image: c3550-ipbasek9-m
+            path: 3500
+            release: 12.2(44)SE6
+        campus: *c3550-production
+    WS-C3550-48:
+        production: *c3550-production
+        campus: *c3550-production
+            
+    WS-C3560-24TS:
+        production: &c3560-production
+            image: c3560-ipbasek9-m
+            path: 3500
+            release: 12.2(55)SE8
+        campus: *c3560-production
+        mcc: *c3560-production
+    WS-C3560-24PS:
+        production: *c3560-production
+        campus: *c3560-production
+        mcc: *c3560-production
+    WS-C3560G-24TS:
+        production: *c3560-production
+        campus: *c3560-production
+        mcc: *c3560-production
+    WS-C3560-48PS:
+        production: *c3560-production
+        campus: *c3560-production
+        mcc: *c3560-production
+
+    AIR-AP1131AG-A-K9:
+        production: &ap1130-production
+            image: c1130-k9w7
+            path: ap1130
+            release: 124-25d.JA
+        wlc: &ap1130-wlc
+            image: c1130-k9w8
+            path: ap1130
+            release: 124-25e.JAO3
+    AIR-AP1131G-A-K9:
+        production: *ap1130-production
+        wlc: *ap1130-wlc
+
+    AIR-AP1042N-A-K9:
+        production: &ap1140-production
+            image: c1140-k9w7
+            path: ap1140
+            release: 124-10b.JA3
+        wlc: &ap1140-wlc
+            image: c1140-k9w8
+            path: ap1140
+            release: 152-4.JB3
+
+    AIR-AP1141N-A-K9:
+        production: *ap1140-production
+        wlc: *ap1140-wlc
+            
+    AIR-SAP1602I-A-K9:
+        wlc:
+            image:  ap1g2-rcvk9w8
+            path:   ap1600
+            release: 152-4.JB3
+
+    AIR-AP1262N-A-K9:
+        wlc:
+            image:  ap3g1-rcvk9w8
+            path:   ap1200
+            release: 152-4.JB4
+
+    ASA5520:
+        production:
+            image: asa842-k8.bin
+            path: ASA5500
+            release: None
+
+###
+# exceptional group mappings for specific devices and groups
+###
+exceptions:
+
+    # all devices should use this group as per default
+    default_group:  production
+
+    # exceptional device group mappings
+    devices:
+        swh-devctlcore: vrf
+

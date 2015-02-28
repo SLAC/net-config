@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Dan Sneddon <dsneddon@slac.stanford.edu>
+
+# Wrapper for pysvn tests
+
+# path to binaries and libraries
+BASE=/afs/slac.stanford.edu/g/scs/net/projects/net-config
+BIN=$BASE/test
+export PYTHONPATH=$BASE/lib/
+
+cmd=$1
+
+commands="      sql_test=sql_test.py "
+
+for pair in ${commands}; do
+  eval execcmd_${pair}
+done
+
+eval expanded_cmd='${execcmd_'${cmd}'}'
+
+
+if test ${expanded_cmd:-no} = no; then
+  echo "Usage: $0 cmd [options...]" 1>&2
+  echo "   cmd is one of:" 1>&2
+  for pair in ${commands}; do
+    eval `echo ${pair} | sed -e 's/=.*//' -e 's/^/a=/'`
+    echo "     "${a}
+  done
+else
+    shift
+    exec $BIN/${expanded_cmd} "$@"
+fi
+

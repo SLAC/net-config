@@ -1,0 +1,16 @@
+[echo=Setting up interfaces...]
+conf t
+
+interface Fa 0
+  no shut
+
+ip default-gateway 172.18.209.1
+interface BVI1
+ ip address 172.18.209.5 255.255.255.0
+ no ip route-cache
+ no shut
+
+end
+
+[echo=Upgrading firmware...]
+[run=updateToLatestFirmware]

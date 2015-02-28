@@ -1,0 +1,97 @@
+defaults: &defaults
+    console: ts-netstaging
+    console_profile: netstaging
+    switch: swh-netstaging
+    console_port_offset: 2000
+    switch_port_prefix: fa1/0/
+    staging_gateway: 172.18.209.1
+    staging_ip: 172.18.209.4
+    staging_netmask: 255.255.255.0
+    staging_vlan: 517
+
+campus:
+    <<: *defaults
+    cmds_console_setup: |
+      ip default-gateway {{ staging_gateway }}
+      int vlan 1
+        ip address {{ staging_ip }} {{ staging_netmask }}
+        no shut
+      end
+    cmds_console_teardown: |
+      no ip default-gateway
+      int vlan 1
+        no ip address
+        shut
+      end
+
+devctl:
+    <<: *defaults
+    cmds_console_setup: |
+      ip default-gateway {{ staging_gateway }}
+      int vlan 1
+        ip address {{ staging_ip }} {{ staging_netmask }}
+        no shut
+      end
+    cmds_console_teardown: |
+      no ip default-gateway
+      int vlan 1
+        no ip address
+        shut
+      end
+  
+ap:
+    <<: *defaults
+    device_interface: Fa0
+    cmd_console_setup: |
+      ip default-gateway {{ staging_gateway }}
+      interface {{ device_interface }}
+        ip address {{ staging_ip }} {{ staging_netmaks }}
+        no ip route-cache
+        hold-queue 200 in
+        hold-queue 200 out
+        no shut
+    cmd_teardown_file: |
+      no ip default-gateway
+      interface {{ device_interface }}
+        no ip address
+        shut
+
+
+ap-1141:
+    <<: *defaults
+    device_interface: Gi0
+    cmd_console_setup:
+      ip default-gateway {{ staging_gateway }}
+      interface {{ device_interface }}
+        ip address {{ staging_ip }} {{ staging_netmaks }}
+        no ip route-cache
+        hold-queue 200 in
+        hold-queue 200 out
+        no shut
+    cmd_teardown_file: 
+      no ip default-gateway
+      interface {{ device_interface }}
+        no ip address
+        shut
+
+  
+# interface {{ device_interface }}.{{ staging_visitor }}
+#   encapsulation dot1Q {{ staging_visitor }}
+#   no ip route-cache
+#   no cdp enable
+#   bridge-group 2
+#   no bridge-group 2 source-learning
+#   bridge-group 2 spanning-disabled
+# !
+# interface {{ device_interface }}.{{ staging_vlan }}
+#   encapsulation dot1Q {{ staging_vlan }} native
+#   no ip route-cache
+#   no cdp enable
+#   bridge-group 1
+#   no bridge-group 1 source-learning
+#   bridge-group 1 spanning-disabled
+# !
+# interface BVI1
+# no ip address dhcp client-id {{ staging_ip }}
+# ip address {{ staging_ip }} {{ staging_netmask }}
+# no ip route-cache
