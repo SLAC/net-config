@@ -83,13 +83,13 @@ class ArpsF5Tmsh( Arps ):
             vlans_map[d['name']] = d['number']
         # logging.debug("VLANS: %s" % (vlans_map,))
         
-        for d in self.prompt.tell_and_match_block( 'tmsh show net arp', [ '^(?P<name>\d+\.\d+\.\d+\.\d+)\s+(?P<ip_address>\d+\.\d+\.\d+\.\d+)\s+(?P<mac_address>\w+\:\w+\:\w+\:\w+\:\w+\:\w+)\s+\/Common\/(?P<vlan_name>\S+)\s+' ], all_matches=True, error_okay=True ):
+        for d in self.prompt.tell_and_match_block( 'tmsh show net arp', [ '^(?P<name>\d+\.\d+\.\d+\.\d+)\s+(?P<ip_address>\d+\.\d+\.\d+\.\d+)\s+(?P<mac_address>\w+\:\w+\:\w+\:\w+\:\w+\:\w+)\s+\/Common\/(?P<interface>\S+)\s+' ], all_matches=True, error_okay=True ):
             # logging.debug(" d: %s" % d)
             if 'mac_address' in d and 'ip_address' in d:
                 d['mac_address'] = mac_address(d['mac_address'],format='net')
                 d['ip_address'] = d['ip_address'].lower()
                 # map vlan name to number
-                d['vlan'] = vlans_map[d['vlan_name']]
+                d['vlan'] = vlans_map[d['interface']]
                 yield d['mac_address'] + '-' + d['ip_address'], d
         return
 
