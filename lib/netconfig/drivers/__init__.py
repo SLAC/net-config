@@ -760,10 +760,9 @@ class ComponentList( list ):
         return
         
     def _on(self, var):
-        logging.warn("SELF: %s" % (self,))
         for k,d in self:
+            # logging.debug(" k: %s,\tvar: %s,\td: %s" % (k,var,d))
             if var in d:
-                # logging.debug(" k: %s, d: %s" % (k,d[var]))
                 yield k, d[var]
         return
 
@@ -1297,6 +1296,9 @@ class Arps( ComponentList ):
         return self._on('ip_address')
     def on_physical_port(self):
         return self._on('interface')
+    def on_vlan(self):
+        return self._on('vlan')
+
 
 class Device( object ):
     """
