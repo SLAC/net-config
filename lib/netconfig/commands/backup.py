@@ -35,7 +35,10 @@ def backup( hostname, netconfig_conf, mutex, storage_path, options, quiet, write
         device = netconfig.get( hostname, options=options )
         netconfig.connect( device, **options )
         if commit:
-            device.system.config.commit()
+            try:
+                device.system.config.commit()
+            except Exception,e:
+                logging.info("%s: %s" % (hostname,e) )
         config = device.system.config.get()
         res, person, diff = storage.insert( hostname, config, commit=write_config )
     except Exception,e:
@@ -137,6 +140,7 @@ class ToFiles( Command, MultiprocessMixin ):
         
         parser.add_argument( '--file_store_path', help='path to config files root', default=settings['file_store']['path'] )
 
+        parser.add_argument( '--log_format', default='%(module)s %(lineno)d\t%(levelname)s\t%(message)s', required=False )
         parser.add_argument( '--settings', default=settings, required=False )
         parser.add_argument( '--cache_group', default='backup' )
 

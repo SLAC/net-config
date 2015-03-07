@@ -43,7 +43,7 @@ class PromptCiscoIos( Prompt ):
         'input': "Invalid input detected at",
         'incomplete': "% Incomplete command",
         'denied': '% Access denied',
-        'authorization': '(Error: AAA authorization failed|cmd not authorized: this incident has been reported)',
+        'authorization': '(Error: AAA authorization failed|cmd not authorized: this incident has been reported|Command authorization failed)',
         'rejected: ': 'Command rejected:.*$'
     }
 
@@ -1066,11 +1066,13 @@ class ConfigCiscoIos( Config ):
         return None
         
     def commit(self):
-        # self.prompt.tell( 'copy running-config startup-config', cursor=self.prompt.cursor('mode','enable'), timeout=self.prompt.timeouts['long'] )
-        # if self.prompt.current_cursor == self.prompt.cursor( 'interact', 'question'):
-        #     return self.prompt.ask( 'startup-config' )
-        return self.prompt.ask( 'write memory', cursor=self.prompt.cursor('mode','enable'), timeout=self.prompt.timeouts['long'], output_wait=2 )
-        # better checks?
+        return self.prompt.request( 'copy running-config startup-config', 
+            cursor=self.prompt.cursor('mode','enable'), 
+            timeout=self.prompt.timeouts['long'], 
+            interact={
+                'question': "" # take default
+            }
+        )
 
 class ModelCiscoIos( Model ):
     """

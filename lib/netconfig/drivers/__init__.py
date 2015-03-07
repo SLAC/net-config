@@ -381,7 +381,7 @@ class Prompt( object ):
         first = True
         c, output = self.wait_for_output( timeout=timeout )
         mode, t, context = self.inverse_cursor( c )
-        # logging.debug("   > m %s %s %s" % (mode,t,context))
+        # logging.debug("   > m=%s, t=%s, m c=%s: %s" % (mode,t,context,output))
         if mode == 'error':
             logging.debug("  command error'd %s" % (c,))
             if not error_okay:
@@ -522,12 +522,12 @@ class Prompt( object ):
         # go!
         try:
             for r in self.tell( cmd, timeout=timeout, cursor=cursor, preempt=preempt, output_wait=output_wait, suppress_command_output=suppress_command_output, post_prempt=False ):
-                logging.debug("  req> %s" % r)
+                logging.debug("  request> %s" % r)
                 out.append( r )
                 while self.current_cursor in interactive:
                     # logging.debug(" +++ current cursor: %s -> %s" % (self.current_cursor,interact) )
-                    for s in self.respond( interact ):
-                        # logging.warn(" S: %s" % (s,))
+                    for s in self.respond( interact, timeout=timeout ):
+                        # logging.debug("   > %s" % (s,))
                         if s:
                             out.append(s)
             self.new_line()
@@ -536,9 +536,9 @@ class Prompt( object ):
             ok = True if fail_okay else False
         if error_on_null_output and c == 0:
             ok = False
+        logging.debug("finished request: %s" % ok)
         if not ok:
             raise Exception, 'request failed'
-        logging.debug("finished request")
         return out
 
     def ask( self, *args, **kwargs ):
@@ -548,7 +548,7 @@ class Prompt( object ):
         try:
             logging.debug("asking...")
             out = self.request( *args, **kwargs )
-            logging.debug("  true")
+            logging.debug("  true: %s" % (out,))
             return True
         except:
             logging.debug("  false")
