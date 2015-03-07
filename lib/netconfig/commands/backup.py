@@ -22,7 +22,7 @@ import os
 import time
 
 
-def backup( hostname, netconfig_conf, mutex, storage_path, options, quiet, commit ):
+def backup( hostname, netconfig_conf, mutex, storage_path, options, quiet, write_config, commit ):
     # logging.error("hostname: %s, netconfig=%s, storage=%s" % (hostname,netconfig_conf,storage_path))
     res, person, diff, error = None, None, {}, None
     device = None
@@ -34,8 +34,10 @@ def backup( hostname, netconfig_conf, mutex, storage_path, options, quiet, commi
         storage = FileStore( path=storage_path )
         device = netconfig.get( hostname, options=options )
         netconfig.connect( device, **options )
+        if commit:
+            device.system.config.commit()
         config = device.system.config.get()
-        res, person, diff = storage.insert( hostname, config, commit=commit )
+        res, person, diff = storage.insert( hostname, config, commit=write_config )
     except Exception,e:
         logging.debug("Err: %s: %s\n%s" % (type(e),e,traceback.format_exc()) )
         error = str(e)
@@ -123,6 +125,8 @@ class ToFiles( Command, MultiprocessMixin ):
 
         parser.add_argument( '--quiet', help='silent output', default=False, action="store_true" )
 
+        parser.add_argument( '--commit', help='commit running config first on device', default=False, action="store_true" )
+
         parser.add_argument( '--randomise', help='randomise order of tests', default=False, action="store_true" )
         parser.add_argument( '--donotreport', help='hosts to ignore', default=[], nargs="*" )
 
@@ -137,7 +141,7 @@ class ToFiles( Command, MultiprocessMixin ):
         parser.add_argument( '--cache_group', default='backup' )
 
 
-    def _run( self, commit=True, **kwargs):
+    def _run( self, write_config=True, **kwargs):
 
         init_loggers(**kwargs)
 
@@ -156,7 +160,7 @@ class ToFiles( Command, MultiprocessMixin ):
         mutex = manager.Lock()
         
         # map/reduce
-        target_args = [ kwargs['config'], mutex, kwargs['file_store_path'], options, kwargs['quiet'], commit ]
+        target_args = [ kwargs['config'], mutex, kwargs['file_store_path'], options, kwargs['quiet'], True, kwargs['commit'] ]
         res = self.map( backup, devices, num_workers=kwargs['workers'], target_args=target_args )
         for hostname, status in self.fold( devices, res, ignore=kwargs['donotreport'] ):
             config = status['config']
@@ -170,7 +174,7 @@ class ToFiles( Command, MultiprocessMixin ):
         errored = {}
         changed = {}
                     
-        for hostname, config, status in self._run( commit=True, **kwargs ):
+        for hostname, config, status in self._run( write_config=True, **kwargs ):
             # don't bother if not changed
             if not status['changed'] == False:
                 # organise by error
@@ -227,7 +231,7 @@ class ToConsole( ToFiles ):
 
     def run(self, *args, **kwargs):
 
-        for hostname, config, status in self._run( commit=True, **kwargs ):
+        for hostname, config, status in self._run( write_config=True, **kwargs ):
             if kwargs['diff']:
                 print status['diff']
             else:
