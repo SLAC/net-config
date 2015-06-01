@@ -550,9 +550,12 @@ class Prompt( object ):
             out = self.request( *args, **kwargs )
             logging.debug("  true: %s" % (out,))
             return True
-        except:
+        except Exception, e:
             logging.debug("  false")
-            return False
+            if 'fail_okay' in kwargs and bool(kwargs['fail_okay']):
+                return False
+            else:
+                raise e
 
     def parse_block( self, block, regexes=[] ):
         data = {}

@@ -161,14 +161,14 @@ class PortsCiscoIos( Ports ):
         self.lldp = True if self.prompt.ask('show lldp', fail_okay=True ) else False
         self.cdp = None
         try:
-            self.cdp = True if self.prompt.ask('show cdp') else False
+            self.cdp = True if self.prompt.ask('show cdp', fail_okay=False ) else False
         except:
             # stupid nexus's
             try:
                 self.cdp = True if self.prompt.ask('show cdp global') else False
             except:
                 pass
-            
+        self.prompt.ask('')
         # logging.debug("LLDP: %s" % self.lldp)
 
     def _int_run( self, port=None ):
@@ -520,7 +520,7 @@ class PortsCiscoIos( Ports ):
             elif info['status'] == 'err-disabled':
                 info['state'] = 'err-disabled'
                 info['protocol'] = False
-            elif info['status'] in ( 'sfpAbsent', 'xcvrInval', 'sfpInvali', 'adminCfgC' ):
+            elif info['status'] in ( 'sfpAbsent', 'xcvrInval', 'sfpInvali', 'adminCfgC', 'xcvrAbsen' ):
                 info['state'] = False
                 info['protocol'] = False
             elif info['status'] in ( 'monitoring' ):
