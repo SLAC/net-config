@@ -514,7 +514,7 @@ class PortsCiscoIos( Ports ):
             elif info['status'] in ( 'notconnect', 'notconnec' ):
                 info['state'] = True
                 info['protocol'] = False
-            elif info['status'] in ( 'disabled', 'disable', 'down', 'noOperMem', 'down' ):
+            elif info['status'] in ( 'disabled', 'disable', 'down', 'noOperMem', 'down', 'suspndByV' ):
                 info['state'] = False
                 info['protocol'] = False
             elif info['status'] == 'err-disabled':
