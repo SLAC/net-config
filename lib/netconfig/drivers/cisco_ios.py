@@ -775,7 +775,8 @@ class PortsCiscoIos( Ports ):
         """ configure port for access on vlan value """
         logging.debug("set type access: %s" %(value))
         if len( value ) == 1:
-            self.prompt.ask( ' switchport' ) \
+            # older ios devices dont like the switchport command
+            self.prompt.ask( ' switchport', fail_okay=True ) \
                 and self.prompt.ask( ' switch mode access' )
             vlan = value[0]
             logging.debug("  access vlan %s (%s)" % (vlan, value))
