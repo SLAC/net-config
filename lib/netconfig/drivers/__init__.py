@@ -239,7 +239,7 @@ class Prompt( object ):
             self.preamble = str(this_prompt)
 
         # send some commands to ensure that this device is the correct one 
-        logging.debug("current context: %s" % (self.current_context,))
+        #logging.debug("current context: %s" % (self.current_context,))
         self.setup_prompts( context=self.current_context )
         # check to make sure it's correct
         try:
@@ -525,7 +525,7 @@ class Prompt( object ):
                 logging.debug("  request> %s" % r)
                 out.append( r )
                 while self.current_cursor in interactive:
-                    # logging.debug(" +++ current cursor: %s -> %s" % (self.current_cursor,interact) )
+                    logging.debug(" +++ current cursor: %s -> %s" % (self.current_cursor,interact) )
                     for s in self.respond( interact, timeout=timeout ):
                         # logging.debug("   > %s" % (s,))
                         if s:

@@ -45,7 +45,7 @@ class Sanitise( Command ):
         # logging.error("scrubs: %s" % scrubs)
 
         for f in kwargs['files']:
-            logging.info("processing %s" % (f,)  )
+            logging.debug("processing %s" % (f,)  )
         
             fn = open( f, 'r' )
             this = []
