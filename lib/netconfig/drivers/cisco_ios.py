@@ -6,6 +6,7 @@ from re import compile, match, search, sub, DOTALL, finditer
 
 from netconfig.drivers import DeviceException, IncompatibleDeviceException
 
+from os import path
 import logging
 
 #######################################################################
@@ -1078,13 +1079,21 @@ class ModelCiscoIos( Model ):
     """
     Model information for a generic Cisco IOS Switch
     """
-    def get( self ):
-        return [ m['model'] for m in self.parent.get() ]
+    def get( self, cached=False ):
+        return [ m['model'] for m in self.parent.get(cached=cached) ]
 
 class FirmwareCiscoIos( Firmware ):
     """
     Firmware components for a generic Cisco IOS switch
     """
+
+    def __is_3850(self):
+        is_3850 = False
+        for m in self.parent.model.get(cached=True):
+            if '3850' in m:
+                is_3850 = True
+        # 3850's
+        return is_3850
 
     def transfer_firmware_image( self, *paths, **kwargs ):
         # overwrite=True, image_only=True, dry_run=False, *paths ):
@@ -1094,36 +1103,68 @@ class FirmwareCiscoIos( Firmware ):
         err = []
         okay = []
         
-        # create command line
-        cmd = 'archive download-sw '
-        if not 'overwrite' in kwargs:
-            kwargs['overwrite'] = True
-        
-        if 'overwrite' in kwargs and kwargs['overwrite']:
-            cmd = cmd + ' /overwrite '
-        if 'image_only' in kwargs and kwargs['image_only']:
-            cmd = cmd + ' /imageonly '
-        cmd = cmd + ' '.join( paths )
-        
-        if 'dry_run' in kwargs and kwargs['dry_run']:
-            logging.info('%s' % (cmd,))
-            return False
+        is_3850 = self.__is_3850()
+        if not is_3850:
             
-        t = len(paths)*self.prompt.timeouts['very_long']
-        # logging.warn("CMD: %s" % cmd )
-        for l in self.prompt.tell( cmd, cursor=self.prompt.cursor('mode','enable'), timeout=t ):
-            logging.debug(" downloading...")
-            if match( '(\%)?(?i)Error\:? (?P<message>.*$)', l ):
-                err.append( l )
-            elif match( 'New software image installed in ', l ):
-                okay.append( l )
-            elif match( 'examining image...', l ):
-                logging.debug(' downloaded')
-            elif match( 'Deleting ', l ):
-                logging.debug(' clearing')
-            elif match( 'Installing ', l ):
-                logging.debug(' installing')
-
+            # create command line
+            cmd = 'archive download-sw '
+            if not 'overwrite' in kwargs:
+                kwargs['overwrite'] = True
+        
+            if 'overwrite' in kwargs and kwargs['overwrite']:
+                cmd = cmd + ' /overwrite '
+            if 'image_only' in kwargs and kwargs['image_only']:
+                cmd = cmd + ' /imageonly '
+            cmd = cmd + ' '.join( paths )
+        
+            if 'dry_run' in kwargs and kwargs['dry_run']:
+                logging.info('%s' % (cmd,))
+                return False
+            
+            t = len(paths)*self.prompt.timeouts['very_long']
+            # logging.warn("CMD: %s" % cmd )
+            for l in self.prompt.tell( cmd, cursor=self.prompt.cursor('mode','enable'), timeout=t ):
+                logging.debug(" downloading...")
+                if match( '(\%)?(?i)Error\:? (?P<message>.*$)', l ):
+                    err.append( l )
+                elif match( 'New software image installed in ', l ):
+                    okay.append( l )
+                elif match( 'examining image...', l ):
+                    logging.debug(' downloaded')
+                elif match( 'Deleting ', l ):
+                    logging.debug(' clearing')
+                elif match( 'Installing ', l ):
+                    logging.debug(' installing')
+                    
+        elif is_3850:
+            
+            # interact={ 'Destination filename': "\n", 'Do you want to over write? [confirm]': 'y' }
+            
+            # logging.error("INSTALL paths=%s, kwargs=%s" % (paths, kwargs))
+            filepath = paths[-1]
+            cmd = "copy %s flash:" % (filepath,)
+            # logging.error("CMD: %s" % (cmd, ))
+            logging.info(" downloading firmware...")
+            for l in self.prompt.tell( cmd, cursor=self.prompt.cursor('mode','enable'), timeout=self.prompt.timeouts['very_long'] ):
+                logging.debug("> %s" % (l,) )
+                if match( 'Accessing ', l ):
+                    logging.debug("accessing...")
+                elif match( '\[OK', l ):
+                    logging.debug('done')
+            
+            # install
+            file = path.basename( filepath )
+            # cat3k_caa-universalk9.SPA.03.03.05.SE.150-1.EZ5.bin
+            cmd = 'software install file flash:%s on-reboot verbose' % (file,)
+            # logging.error("CMD: %s" % (cmd,) )
+            logging.info("installing firmware...")
+            for l in self.prompt.tell( cmd, cursor=self.prompt.cursor('mode','enable'), timeout=self.prompt.timeouts['very_long'] ):
+                logging.debug("> %s" % (l,) )
+                if search( 'SUCCESS: ', l ):
+                    logging.debug('success')
+                elif search( 'Error', l ):
+                    err.append( l )
+            
         if len(err):
             raise DeviceException, ' '.join( err )
         return len( okay ) > 0
@@ -1155,15 +1196,25 @@ class FirmwareCiscoIos( Firmware ):
             version = version + '(' + this + ')'
             # final
             version = version + m[-1].group(3)
-            
+        # 3850's
+        elif m.append( search( r'(\d{2}\.\d{2}\.\d{2}\.SE)\.(tar|bin)$', image_path ) ) or m[-1]:
+            version = m[-1].group(1)
+            version = version.replace( '.SE', 'SE' )
         return version
 
     def firmware_filename( self, image, version ):
-        # maps the image and version strings to a filename
-        image = image.replace( '-m', '-' )
-        if not image[-1] == '-':
-            image = image + '-'
-        version = version.replace('.','').replace('(','-').replace(')','.')
+        if self.__is_3850():
+            # logging.error("IMAGE %s %s" % (image,version))
+            # cat3k_caa-universalk9.SPA.03.03.05.SE.150-1.EZ5.bin
+            # cat3k_caa-universalk9 03.03.05SE
+            v = version.replace('SE','.SE')
+            return "%s.SPA.%s.150-1.EZ5.bin" % (image,v)
+        else:
+            # maps the image and version strings to a filename
+            image = image.replace( '-m', '-' )
+            if not image[-1] == '-':
+                image = image + '-'
+            version = version.replace('.','').replace('(','-').replace(')','.')
         return "%star.%s.tar" % (image, version)
 
     def image( self ):
@@ -1755,7 +1806,11 @@ class SystemCiscoIos( System ):
     password = PasswordCiscoIos
     users = UsersCiscoIos
     
-    def get(self):
+    __cache = None
+    
+    def get(self, cached=False ):
+        if cached and self.__cache:
+            return self.__cache
         c = []
         members = []
         m = []
@@ -1763,11 +1818,14 @@ class SystemCiscoIos( System ):
         for l in self.prompt.tell( 'show version', cursor=self.prompt.cursor( 'mode', 'enable' ), output_wait=0.03, timeout=self.prompt.timeouts['medium'] ):
             # logging.debug(" > " + str(l))
             if search( r'^\*?\s+\d+\s+\d+', l ):
-                # logging.debug("   match search")
                 stuff = l.split()
+                logging.debug("   match search %s: %s" % (l,stuff))
                 if len(stuff) > 4:
+                    # remove state for 3850's
+                    if stuff[-1] == 'INSTALL':
+                        _ = stuff.pop()
                     item = {
-                        'sw_image': stuff.pop(),
+                        'sw_image':     stuff.pop(),
                         'sw_version':   stuff.pop(),
                         'model':    stuff.pop(),
                         None: stuff.pop(),
@@ -1778,7 +1836,7 @@ class SystemCiscoIos( System ):
             elif m.append( search( r'cisco ((\w|\-)+) ', l ) ) or m[-1]:
                 # logging.debug("  match model number")
                 item['model'] = m[-1].group(1)
-            elif m.append( search( r'^Cisco ((\w|\-)+) \(PowerPC\) processor', l ) ) or m[-1]:
+            elif m.append( search( r'^Cisco ((\w|\-)+) \(PowerPC|MIPS\) processor', l ) ) or m[-1]:
                 item['model'] = m[-1].group(1)                    
             elif m.append( search( r'^Cisco IOS Software, .* Software \((.*)\), Version (.*),', l ) ) or m[-1]:
                 # logging.debug("   match versions")
@@ -1787,7 +1845,10 @@ class SystemCiscoIos( System ):
         # logging.debug('model info: ' + str(members))
         if len(members) == 0:
             members.append( item )
-        return sorted( members, key=lambda k: k['number'] )
+        output = sorted( members, key=lambda k: k['number'] )
+        if cached:
+            self.__cache = output
+        return output
     
     def reload( self, at=None, force=False, commit=False ):
         """ reload a device """
