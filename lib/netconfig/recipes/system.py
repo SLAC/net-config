@@ -83,7 +83,7 @@ def upgrade_firmware( netconfig, device, group, release, fw_helper, options={}, 
         netconfig.connect( device, **options )
 
     # 1) get the model
-    models = device.system.get()
+    models = device.system.get(cached=True)
     # logging.debug("  models: %s" % (models,))
     if len( models ) < 1:
         raise Exception, 'could not determine hardware model numbers'
@@ -103,7 +103,7 @@ def upgrade_firmware( netconfig, device, group, release, fw_helper, options={}, 
         fm_image = m['sw_image'].lower()
         fm_release = m['sw_version']
         
-        logging.debug("    (%s) %s -> (%s) %s/%s " % (fm_image,fm_release,to_image,to_release,to_release_this))
+        logging.debug("    (%s) %s -> (%s) %s/%s " % (fm_image,fm_release, to_image,to_release,to_release_this))
         
         # todo: check for version differences in to/frm            
         if to_release == None:
@@ -134,7 +134,7 @@ def upgrade_firmware( netconfig, device, group, release, fw_helper, options={}, 
 
     # fine!
     if len(upgradable) == 0:
-        raise Exception, 'no firmware upgrade required'
+        raise Exception, 'no firmware upgrade required (already on %s version %s)' % (to_image, to_release)
         
     # 3) determine the firwmare to use for upgrade
     logging.debug("determining upgrade: %s" % (upgradable,))
@@ -152,7 +152,7 @@ def upgrade_firmware( netconfig, device, group, release, fw_helper, options={}, 
         raise Exception, 'no upgrades required'
         
     # 5) push the new firmware over
-    logging.debug("images to transfer: %s" % (upgrade,))
+    logging.info("images to transfer: %s" % (upgrade,))
     images = [ upgrade[i] for i in upgrade.keys() ]
     device.system.firmware.transfer_firmware_image( *images, dry_run=dry_run, image_only=image_only )
 
