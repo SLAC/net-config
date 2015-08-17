@@ -141,6 +141,7 @@ class Pipe( Command, MultiprocessMixin ):
 
         parser.add_argument( '-w', '--workers', help='number of concurrent workers', default=1, type=int )
 
+        parser.add_argument( '--report', help='summary table of results', default=False, action='store_true' )
         parser.add_argument( '--echo', help='echo commands', default=False, action='store_true' )
         parser.add_argument( '--quiet', help='silent output', default=False, action="store_true" )
         parser.add_argument( 'device', help='device(s)', nargs="+" )
@@ -171,8 +172,14 @@ class Pipe( Command, MultiprocessMixin ):
         target_args = [ kwargs['config'], mode, commands, options ]
         res = self.map( pipe, devices, num_workers=kwargs['workers'], target_args=target_args )
         for hostname, status in self.fold( devices, res ):
-            # print "%s\t%s" % (hostname, status)
             for s in status:
-                # print '! %s' % s['command']
-                for o in s['output']:
-                    print "%s" % o
+
+                if kwargs['echo']:
+                    print "! %s: %s" % (hostname, s['command'])
+
+                output = s['output']
+                # print "%s: %s" % (status,output)
+                if kwargs['report']:
+                    print "%s\t%s" % (hostname, '\n'.join(output).strip())
+                else:
+                    print '\n'.join(output)
