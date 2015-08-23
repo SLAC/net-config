@@ -81,7 +81,7 @@ class PromptCiscoAsa( PromptCiscoIos ):
         logging.debug("changing context to %s" % context )
         # self.setup_prompts( context=None, preamble=self.preamble, append_generic=True )
         self.setup_prompts( context=None, preamble='', current=False )
-        ret = self.ask( 'changeto context %s' % (context,), output_wait=0.1 )
+        ret = self.ask( 'changeto context %s' % (context,), output_wait=0.1, fail_okay=True )
         logging.debug("change to context %s: %s" % (context,ret))
         # rediscover prompts?
         ok = self.discover_prompt()
@@ -127,10 +127,10 @@ class PromptCiscoAsa( PromptCiscoIos ):
         logging.warn("dunno how to change from current prompt " + str(self.current_cursor) + ' to mode enable')
         return False
     
-    def list_contexts( self, fail_okay=True ):
+    def list_contexts( self, error_okay=True ):
         contexts = []
         if self.change_to_context( self.master_context ):
-            for l in self.tell( 'show context', cursor=self.cursor('mode','enable') ):
+            for l in self.tell( 'show context', cursor=self.cursor('mode','enable'), error_okay=error_okay ):
                 m = []
                 if m.append( search( r'^(\*| )(\w+)\s+.*$', l ) ) or m[-1]:
                     #logging.debug( "> " + m[-1].group(1) + ", " + m[-1].group(2) )
@@ -221,7 +221,7 @@ class ConfigCiscoAsa( MultipleFileConfig ):
             c = self.context_for_filepath( f )    
             # logging.debug("context: " + str(c) + ", " + str(this))
             dc.set_config( this, self, context=c )
-        contexts = self.prompt.list_contexts( fail_okay=True )
+        contexts = self.prompt.list_contexts( error_okay=True )
         logging.debug("CONTEXTS: %s" % (contexts,))
         # asa's could be configured without contexts
         if len( contexts ) == 0:
