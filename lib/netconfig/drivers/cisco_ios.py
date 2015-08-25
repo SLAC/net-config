@@ -1,4 +1,4 @@
-from netconfig.drivers import Prompt, Port, Ports, Config, Model, Firmware, Layer1, Vlan, SpanningTree, MacAddress, Layer2, Routes, Arps, Layer3, Transceiver, FRU, Password, Users, System, Device, PortChannels, Module
+from netconfig.drivers import Prompt, Port, Ports, Config, Model, Firmware, Layer1, Vlan, SpanningTree, MacAddress, Layer2, Routes, Arps, Layer3, Transceiver, FRU, Password, Users, System, Device, PortChannels, Module, Stats, Rfc2863
 
 from slac_utils.net import prefixlen_to_netmask, truncate_physical_port, netmask_to_prefixlen, to_ip
 
@@ -1859,6 +1859,63 @@ class SystemCiscoIos( System ):
             })
 
 
+class Rfc2863CiscoIos( Rfc2863 ):
+    port_regexes = [
+        r'^(?P<port>\S+) is (?P<admin_status>\S+), line protocol is (?P<oper_status>\S+)',
+        r'^\s+Description: (?P<alias>.*)\s*$',
+        r'^\s+MTU (?P<mtu>\d+) bytes, BW (?P<speed>\d+) ',
+        r'^\s+(?P<duplex>\S+)-duplex, ',
+        r'^\s+Input queue: (?P<in_queue_size>\d+)/(?P<in_queue_max>\d+)/(?P<in_queue_drops>\d+)/(?P<in_queue_flushes>\d+) \(size/max/drops/flushes\); Total output drops: (?P<total_output_drops>\d+)',
+        r'^\s+Queueing strategy: (?P<queueing_strategy>\S+)',
+        r'^\s+Output queue: (?P<output_queue_size>\d+)/(?P<output_queue_max>\d+) \(size/max\)',
+        
+        #'  L2 Switched: ucast: 324264128 pkt, 32732949957 bytes - mcast: 13703676 pkt, 1733488346 bytes', 
+        r'^\s+L2 Switched: ucast: (?P<l2_ucast_pkt>\d+) pkt, (?P<l2_ucast_bytes>\d+) bytes - mcast: (?P<l2_mcast_pkt>\d+) pkt, (?P<l2_mcast_bytes>\d+) ',
+        #'  L3 in Switched: ucast: 138697005099 pkt, 166511592421731 bytes - mcast: 0 pkt, 0 bytes mcast',
+        r'^\s+L3 in Switched: ucast: (?P<l3_in_ucast_pkt>\d+) pkt, (?P<l3_in_ucast_bytes>\d+) bytes .*mcast: (?P<l3_in_mcast_pkt>\d+) pkt, (?P<l3_in_mcast_bytes>\d+) ',
+        #'  L3 out Switched: ucast: 112629132385 pkt, 59993629187096 bytes mcast: 0 pkt, 0 bytes', 
+        r'^\s+L3 out Switched: ucast: (?P<l3_out_ucast_pkt>\d+) pkt, (?P<l3_out_ucast_bytes>\d+) bytes .*mcast: (?P<l3_out_mcast_pkt>\d+) pkt, (?P<l3_out_mcast_bytes>\d+) ',
+
+        #'     146265544928 packets input, 167308815553548 bytes, 0 no buffer',
+        r'\s+(?P<input_pkts>\d+) packets input, (?P<input_bytes>\d+) bytes, (?P<input_no_buffer>\d+) no buffer',
+        #'     Received 14764021 broadcasts (0 IP multicasts)',
+        r'\s+Received (?P<input_bcasts>\d+) broadcasts \((?P<input_ip_mcast>\d+) IP multicasts',
+        #'     0 runts, 6380 giants, 0 throttles',
+        r'\s+(?P<input_runts>\d+) runts, (?P<input_giants>\d+) giants, (?P<input_throttles>\d+) throttles',
+        #'     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored',
+        r'\s+(?P<input_errors>\d+) input errors, (?P<input_crc>\d+) CRC, (?P<input_frame_errors>\d+) frame, (?P<input_overrun>\d+) overrun, (?P<input_ignored>\d+) ignored',
+        #'     0 watchdog, 0 multicast, 0 pause input',
+        r'\s+(?P<input_watchdog>\d+) watchdog, (?P<input_mcast>\d+) multicast, (?P<input_pause>\d+) pause input',
+        #'     0 input packets with dribble condition detected',
+        r'\s+(?P<input_dribble>\d+) input packets with dribble condition detected',
+        
+        # #'     113214434454 packets output, 60416695779182 bytes, 0 underruns',
+        r'\s+(?P<output_pkts>\d+) packets output, (?P<output_bytes>\d+) bytes, (?P<output_underruns>\d+) underruns',
+        # #'     0 output errors, 0 collisions, 1 interface resets',
+        r'\s+(?P<output_errors>\d+) output errors, ((?P<output_collisions>\d+) collisions, )?(?P<interface_resets>\d+) interface resets',
+        # #'     0 babbles, 0 late collision, 0 deferred',
+        r'\s+(?P<output_babbles>\d+) babbles, (?P<output_late_collisions>\d+) late collision, (?P<output_deferred>\d+) deferred',
+        # #'     0 lost carrier, 0 no carrier, 0 PAUSE output',
+        r'\s+(?P<lost_carrier>\d+) lost carrier, (?P<no_carrier>\d+) no carrier, (?P<pause_output>\d+) PAUSE output',
+        # #'     0 output buffer failures, 0 output buffers swapped out']
+        r'\s+(?P<output_buffer_failures>\d+) output buffer failures, (?P<output_buffers_swapped_out>\d+) output buffers swapped out',
+
+    ]
+    
+    def _get( self, *args, **kwargs ):
+        for d in self.prompt.tell_and_match_block( 'show int', self.port_regexes, output_wait=5, timeout=self.prompt.timeouts['medium'] ):
+            logging.debug("="*80)
+            if 'port' in d and d['port']:
+                p = truncate_physical_port( d['port'] )
+                d['port'] = p
+                yield p, d
+
+
+class StatsCiscoIos( Stats ):
+    
+    rfc2863 = Rfc2863CiscoIos
+    
+
 class CiscoIos( Device ):
     """
     Device definition for a generic cisco ios switch
@@ -1866,6 +1923,7 @@ class CiscoIos( Device ):
     prompt = PromptCiscoIos
     
     system = SystemCiscoIos
+    stats = StatsCiscoIos
     ports = PortsCiscoIos
     portchannels = PortChannelsCiscoIos
     layer1 = Layer1CiscoIos

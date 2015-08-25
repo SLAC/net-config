@@ -1217,6 +1217,123 @@ class System( Component ):
         """
         pass
 
+class Rfc2863( ComponentList ):
+
+    def on_admin_status( self ):
+        return self._on('admin_status')
+    def on_connector_status( self ):
+        return self._on('connector_status')
+    def on_oper_status( self ):
+        return self._on('oper_status')
+    def on_alias( self ):
+        return self._on('alias')
+
+    def on_mtu( self ):
+        return self._on('mtu')
+    def on_speed( self ):
+        return self._on('speed')
+
+    def on_in_queue_drops( self ):
+        return self._on('in_queue_drops')
+    def on_in_queue_flushes( self ):
+        return self._on('in_queue_flushes')
+    def on_in_queue_size( self ):
+        return self._on('in_queue_size')
+    def on_in_queue_max( self ):
+        return self._on('in_queue_max')
+
+    def on_total_output_drops( self ):
+        return self._on('total_output_drops')
+    def on_queueing_strategy( self ):
+        return self._on('queueing_strategy')
+
+    def on_output_queue_size( self ):
+        return self._on('output_queue_size')
+    def on_output_queue_max( self ):
+        return self._on('output_queue_max')
+    def on_l2_ucast_bytes( self ):
+        
+        return self._on('l2_ucast_bytes')
+    def on_l2_mcast_pkt( self ):
+        return self._on('l2_mcast_pkt')
+    def on_l2_ucast_pkt( self ):
+        return self._on('l2_ucast_pkt')
+    def on_l2_mcast_bytes( self ):
+        return self._on('l2_mcast_bytes')
+    def on_l3_in_ucast_bytes( self ):
+        return self._on('l3_in_ucast_bytes')
+    def on_l3_in_mcast_bytes( self ):
+        return self._on('l3_in_mcast_bytes')
+    def on_l3_in_ucast_pkt( self ):
+        return self._on('l3_in_ucast_pkt')
+    def on_l3_in_mcast_pkt( self ):
+        return self._on('l3_in_mcast_pkt')
+
+    def on_l3_out_ucast_bytes( self ):
+        return self._on('l3_out_ucast_bytes')
+    def on_l3_out_ucast_pkt( self ):
+        return self._on('l3_out_ucast_pkt')
+    def on_l3_out_mcast_bytes( self ):
+        return self._on('l3_out_mcast_bytes')
+    def on_l3_out_mcast_pkt( self ):
+        return self._on('l3_out_mcast_pkt')
+
+    def on_input_bytes( self ):
+        return self._on('input_bytes')
+    def on_input_no_buffer( self ):
+        return self._on('input_no_buffer')
+    def on_input_pkts( self ):
+        return self._on('input_pkts')
+    def on_input_ip_mcast( self ):
+        return self._on('input_ip_mcast')
+    def on_input_bcasts( self ):
+        return self._on('input_bcasts')
+    def on_input_giants( self ):
+        return self._on('input_giants')
+    def on_input_runts( self ):
+        return self._on('input_runts')
+    def on_input_throttles( self ):
+        return self._on('input_throttles')
+    def on_input_overrun( self ):
+        return self._on('input_overrun')
+    def on_input_errors( self ):
+        return self._on('input_errors')
+    def on_input_crc( self ):
+        return self._on('input_crc')
+    def on_input_frame_errors( self ):
+        return self._on('input_frame_errors')
+    def on_input_ignored( self ):
+        return self._on('input_ignored')
+
+    def on_output_bytes( self ):
+        return self._on('output_bytes')
+    def on_output_pkts( self ):
+        return self._on('output_pkts')
+    def on_output_bcasts( self ):
+        return self._on('output_bcasts')
+    def on_output_underruns( self ):
+        return self._on('output_underruns')
+
+    def on_interface_resets( self ):
+        return self._on('interface_resets')
+
+    def on_output_collisions( self ):
+        return self._on('output_collisions')
+    def on_output_errors( self ):
+        return self._on('output_errors')
+    def on_output_discards( self ):
+        return self._on('output_discards')
+    def on_output_buffer_failures( self ):
+        return self._on('output_buffer_failures')
+    def on_output_buffers_swapped_out( self ):
+        return self._on('output_buffers_swapped_out')
+
+
+class Stats( Component ):
+    rfc2863 = Component
+    children = [ 'rfc2863' ]
+    
+
 class Vlan( ComponentList ):
 
     def on_name( self ):
@@ -1313,13 +1430,14 @@ class Device( object ):
     prompt = Prompt
         
     system = System
+    stats = Component
     ports = Ports
     portchannels = PortChannels
     layer1 = Layer1
     layer2 = Layer2
     layer3 = Layer3
 
-    children = [ 'system', 'ports', 'portchannels', 'layer1', 'layer2', 'layer3' ]
+    children = [ 'system', 'ports', 'portchannels', 'layer1', 'layer2', 'layer3', 'stats' ]
 
     def __init__( self, hostname=None, username=None, password=None, enable_password=None, connector_type='ssh', port=None, prime=None, **kwargs ):
         # create the connector
