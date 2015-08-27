@@ -198,7 +198,7 @@ class PortsCiscoIos( Ports ):
                         and 'access_vlan' in d:
                         d['vlan'] = [ d['access_vlan'] ]
                         del d['access_vlan']
-                    if d['type'] == 'trunk':
+                    elif d['type'] == 'trunk':
                         if 'trunked_vlans' in d:
                             d['vlan'] = []
                             for i in d['trunked_vlans'].split(','):
@@ -223,14 +223,20 @@ class PortsCiscoIos( Ports ):
                                 else:
                                     # vlans['trunk'][i] = True
                                     d['vlan'].append( str(i) )     
-                            del d['trunked_vlans_additional']                   
-                    if d['type'] == 'private-vlan host' \
+                            del d['trunked_vlans_additional']         
+                        # if no native-vlan, assume 1
+                        if not 'native_vlan'  in d:
+                            d['native_vlan'] = 1         
+                    elif d['type'] == 'private-vlan host' \
                         and 'private_vlan_one' in d and 'private_vlan_two' in d:
                         # logging.debug(" private vlan! %s %s " % (d['private_vlan_one'], d['private_vlan_two']))
                         # d['type'] = 'private-vlan host'
                         d['vlan'] = [ d['private_vlan_one'], d['private_vlan_two'] ]
                         del d['private_vlan_one']
                         del d['private_vlan_two']         
+                    if d['type'] in ( 'fex-fabric', 'routed' ):
+                        # clear trunked_vlans
+                        del d['trunked_vlans']
                 
                 if 'shutdown' in d:
                     d['state'] = False
@@ -445,6 +451,7 @@ class PortsCiscoIos( Ports ):
                 info['type'] = None
             if not 'vlan' in info:
                 info['vlan'] = 1
+                info['native_vlan'] = 1
 
             # add alias
             for i in f:

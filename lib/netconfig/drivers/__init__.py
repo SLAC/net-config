@@ -993,6 +993,49 @@ class Ports( ComponentList ):
     def filter( self, string=None, **kwargs ):
         raise NotImplementedError, 'filter() is not implemented'
 
+    def on_port( self ):
+        return self._on('port')
+    def on_alias( self ):
+        return self._on('alias')
+    def on_admin_status( self ):
+        return self._on('state')
+    def on_op_status( self ):
+        return self._on('protocol')
+    def on_type( self ):
+        return self._on('type')
+    def on_duplex( self ):
+        return self._on('duplex')
+    def on_duplex_admin( self ):
+        for k,v in self:
+            if v['autoneg']:
+                yield k, 'auto'
+            else:
+                yield k, v['duplex']
+    def on_speed( self ):
+        return self._on('speed')
+    def on_speed_admin( self ):
+        for k,v in self:
+            if v['autoneg']:
+                yield k, 'auto'
+            else:
+                yield k, v['speed']
+    def on_portfast( self ):
+        return self._on('portfast')
+    def on_native_vlan( self ):
+        for k,v in self:
+            if 'native_vlan' in v:
+                yield k, v['native_vlan']
+            elif v['type'] in ( 'access', 'fex-fabric' ) and len( v['vlan'] ) == 1:
+                yield k, v['vlan'][0]
+            else:
+                pass
+    def on_vlans( self ):
+        for k,v in self:
+            if v['type'] == 'access' and len( v['vlan'] ) == 1:
+                pass
+            else:
+                yield k, v['vlan']
+
 
 class PortChannels( ComponentList ):
 
