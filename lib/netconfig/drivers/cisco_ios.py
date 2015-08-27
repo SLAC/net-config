@@ -1236,11 +1236,11 @@ class FirmwareCiscoIos( Firmware ):
 class Layer1CiscoIos( Layer1 ):
     """ returns cdp and lldp information from the switch """
     cdp_matches = {
-        'neighbour': r'^Device ID: (?P<peer_device>\S+)',
-        'ip_address': r'\s+IP address: (?P<peer_address>\S+)',
+        'neighbour': r'^Device ID:\s*(?P<peer_device>\S+)',
+        'ip_address': r'\s+IP(v4)? (a|A)ddress: (?P<peer_address>\S+)',
         'platform': r'^Platform: (?P<peer_platform>.*)\s*,\s+Capabilities: (?P<peer_capabilities>.*)',
-        'interfaces': r'^Interface: (?P<physical_port>\S+),  Port ID \(outgoing port\): (?P<peer_physical_port>\S+)',
-        'holdtime':   r'^Holdtime : (?P<holdtime>\d+) sec',
+        'interfaces': r'^Interface: (?P<physical_port>\S+),\s+Port ID \(outgoing port\): (?P<peer_physical_port>\S+)',
+        'holdtime':   r'^Holdtime\s*: (?P<holdtime>\d+) sec',
         'new':  r'^---------',
     }
     lldp_matches = {
@@ -1275,7 +1275,7 @@ class Layer1CiscoIos( Layer1 ):
                     d['capability_bridge'] = True
                 elif c == 'T':
                     d['capability_telephone'] = True
-        for p in ( 'peer_physical_port', ):
+        for p in ( 'peer_physical_port', 'physical_port' ):
             if p in d:
                 d[p] = truncate_physical_port( d[p] )
         for i in ( 'peer_capabilities', 'peer_address' ):

@@ -1,7 +1,7 @@
 from re import compile, match, search, sub, DOTALL
 import logging
 
-from netconfig.drivers.cisco_ios import RoutesCisco, PortsCiscoIos, FRUCiscoIos, SystemCiscoIos, ArpsCisco, VlanCiscoIos, PromptCiscoIos, Layer2CiscoIos, PortChannelsCiscoIos, ConfigCiscoIos
+from netconfig.drivers.cisco_ios import RoutesCisco, PortsCiscoIos, FRUCiscoIos, SystemCiscoIos, ArpsCisco, VlanCiscoIos, PromptCiscoIos, Layer1CiscoIos, Layer2CiscoIos, PortChannelsCiscoIos, ConfigCiscoIos
 from netconfig.drivers import Layer3, Layer2, Device, ComponentList, Module, Transceiver, IncompatibleDeviceException, Stats, Rfc2863
 
 from slac_utils.net import truncate_physical_port
@@ -226,6 +226,40 @@ class Rfc2863CiscoNexus( Rfc2863 ):
 class StatsCiscoNexus( Stats ):
     rfc2863 = Rfc2863CiscoNexus
 
+
+class Layer1CiscoNexus( Layer1CiscoIos ):
+    
+    lldp_matches = {
+        'peer_ip_address':    r'Management Address: (?P<peer_ip_address>\S+)',
+        'peer_mac_address':   r'Chassis id: (?P<peer_mac_address>\S+)',
+        'capabilities':       r'Enabled Capabilities: (?P<peer_capabilities>\S+)',
+        'platform':           r'\s+Model: (?P<peer_platform>.*)\s*',
+        'vendor':             r'\s+Manufacturer: (?P<peer_vendor>.*)\s*',
+        'local_port':         r'Local Port id: (?P<physical_port>.*)\s*',
+        'peer_port':          r'Port id: (?P<peer_physical_port>.*)\s*'
+    }
+    
+    def _get( self, *args, **kwargs ):
+        items = {}
+        
+        for d in self.prompt.tell_and_match_block( 'show cdp nei detail', self.cdp_matches, block_marker='----------------------------------------', cursor=[self.prompt.cursor('mode','enable'), self.prompt.cursor('mode','exec')] ):
+            d = self.parse_item( d )
+            items[ d['physical_port'] ] = d
+        
+        try:
+            for d in self.prompt.tell_and_match_block( 'show lldp nei detail', self.cdp_matches, block_marker='', cursor=[self.prompt.cursor('mode','enable'), self.prompt.cursor('mode','exec')] ):
+                d = self.parse_item( d )
+                if d['physical_port'] in items:
+                    items[ d['physical_port'] ].update( d )
+                else:
+                    items[ d['physical_port'] ] = d
+        except:
+            pass
+                
+        for k,v in items.iteritems():
+            yield k,v
+            
+            
 class CiscoNexus( Device ):
 
     prompt = PromptCiscoIos
@@ -233,6 +267,7 @@ class CiscoNexus( Device ):
     stats = StatsCiscoNexus
     ports = PortsCiscoNexus
     portchannels = PortChannelsNexus
+    layer1 = Layer1CiscoNexus
     layer2 = Layer2CiscoIos
     layer3 = Layer3CiscoNexus
 
