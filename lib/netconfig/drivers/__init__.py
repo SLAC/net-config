@@ -574,11 +574,19 @@ class Prompt( object ):
         # logging.debug("      >: data: %s" % (data,))
         return data
 
-    def get_blocks( self, cmd, stanza_prefix, ignore_blanks=False, **kwargs ):
+    def get_blocks( self, cmd, stanza_prefix, ignore_blanks=False, block_marker=None, **kwargs ):
+        """
+        separate a lot of lines into discreet blocks based on whether the text is indented per block (using stanza_prefix, or with a series of characters sing block_marker )"""
         block = []
         for o in self.tell( cmd, **kwargs ):
-            # logging.debug("  > '%s'" % (o,))
-            if ( ignore_blanks and o == '' ) or match( stanza_prefix, o ):
+            # logging.debug("  %s> '%s'" % (block_marker,o,))
+            if block_marker:
+                if o == block_marker:
+                    if len(block):
+                        yield block
+                else:
+                    block.append(o)
+            elif ( ignore_blanks and o == '' ) or match( stanza_prefix, o ):
                 # logging.debug('    adding %s to %s' % (o,block))
                 block.append( o )
             else:
@@ -586,6 +594,10 @@ class Prompt( object ):
                     # logging.debug('    block: %s' % (block,))
                     yield block
                 block = [ o ]
+        # last entry
+        if block_marker and len(block):
+            yield block
+            
         return
 
     def tell_and_match( self, cmd, regex, **kwargs ):
@@ -612,8 +624,11 @@ class Prompt( object ):
         """
         like a tell_and_match, but does numerous matches on each stanza
         """
+        r = regexes
+        if isinstance( regexes, dict ):
+            r = [ v for k,v in regexes.iteritems() ]
         for b in self.tell_and_get_block( cmd, **kwargs ):
-            yield self.parse_block( b, regexes )
+            yield self.parse_block( b, r )
         return
 
     def tell_and_get_block( self, cmd, **kwargs ):
