@@ -1257,6 +1257,13 @@ class Layer1CiscoIos( Layer1 ):
         # logging.warn('parsing %s' % (d,))
         if 'peer_device' in d:
             d['peer_device'] = d['peer_device'].lower()
+            if '(' in d['peer_device']:
+                bits = d['peer_device'].replace(')','').split('(')
+                d['peer_device'] = bits.pop(0)
+                try:
+                    d['peer_serial'] = bits.pop(0)
+                except:
+                    pass
         if 'peer_address' in d and to_ip( d['peer_address'] ):
             d['peer_ip_address'] = d['peer_address']
         if 'peer_capabilities' in d:
