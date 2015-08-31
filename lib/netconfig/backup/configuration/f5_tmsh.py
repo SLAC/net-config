@@ -37,7 +37,9 @@ class F5Tmsh( Configuration ):
 
     def __del__( self ):
         # cleanup
-        remove( self._config )
+        if self._config.startswith("/tmp/"):
+            logging.debug("removing %s" % (self._config,))
+            remove( self._config )
         if self.working_dir:
             logging.debug("cleaning up " + str(self.working_dir))
             rmtree( self.working_dir )
@@ -49,11 +51,13 @@ class F5Tmsh( Configuration ):
         # remove always changing files
         for f in self.ignore_files:
             try:
+                logging.debug("  removing %s" % (dest+'/'+f,))
                 remove( dest + '/' + f)
             except:
                 pass
         for f in ( 'var/tmp', ):
             try:
+                logging.debug("  removing %s" % (dest+'/'+f,))
                 rmtree( dest + '/' + f )
             except:
                 pass
