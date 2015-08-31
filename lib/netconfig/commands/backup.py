@@ -39,6 +39,7 @@ def backup( hostname, netconfig_conf, mutex, storage_path, options, quiet, write
                 device.system.config.commit()
             except Exception,e:
                 logging.info("%s: %s" % (hostname,e) )
+                device.prompt.ask("", fail_okay=True)
         config = device.system.config.get()
         res, person, diff = storage.insert( hostname, config, commit=write_config )
     except Exception,e:
