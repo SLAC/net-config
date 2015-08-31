@@ -172,7 +172,7 @@ class FileStore( Store ):
 
     def _get_config( self, hostname, context=None, revision=None ):
         """ returns the configuration object for the given """
-        filepath = self._get_config_file_path( hostname, context=context, revision=revision )
+        filepath = self.__get_config_file_path( hostname, context=context, revision=revision )
         logging.debug("  filepath: %s" % (filepath,))
         # follow symlink
         filepath = os.path.realpath( filepath )
@@ -231,14 +231,15 @@ class FileStore( Store ):
         return dc
         
     
-    def _get_config_symlink_path( self, hostname, context ):
+    def __get_config_symlink_path( self, hostname, context ):
         """ return the symlink path for the hostname and context """
         path = self._CURRENT_DIRECTORY + '/'
-        #logging.error( "CUR: " + self._CURRENT_DIRECTORY + ", dbname=" + self._dbname )
         f = hostname + '.config'
         if context:
             f = hostname + ':' + context + '.config'
-        return os.path.join( path, f )
+        p = os.path.join( path, f )
+        logging.debug( "  symlink path: %s (%s)" % (p,self._CURRENT_DIRECTORY) )
+        return p
     
     
     def validateContext( self, context ):
@@ -248,16 +249,16 @@ class FileStore( Store ):
         return context
         
         
-    def _get_config_file_path( self, hostname, context=None, revision=None ):
+    def __get_config_file_path( self, hostname, context=None, revision=None ):
         """ returns the path for the config revision, None -> current """
         # get the config from symlink if revision is None
-        logging.debug( "hostname: %s, rev: %s" % (hostname,revision))
+        logging.debug( "getting config file path for hostname: %s, rev: %s" % (hostname,revision))
 
         context = self.validateContext( context )
 
         if revision == None:
-            path = self._get_config_symlink_path( hostname, context )
-            # logging.error("current config for " + path)
+            path = self.__get_config_symlink_path( hostname, context )
+            logging.debug("  no revision: current config for " + path)
             return path
 
         # add full path
@@ -290,7 +291,7 @@ class FileStore( Store ):
         f.close( )
         return True
     
-    def _update_symlink( self, target, symlink ):
+    def __update_symlink( self, target, symlink ):
         """ relinks the symlink to the revision provided, None means newest """
         d = os.path.dirname( symlink )
         self._makedir( d )
@@ -312,7 +313,7 @@ class FileStore( Store ):
 
         return res
 
-    def _save_config( self, hostname, config ):
+    def __save_config( self, hostname, config ):
         """ dumps the config into the filepath """
         
         context = self.validateContext( config.getContext() )
@@ -322,7 +323,7 @@ class FileStore( Store ):
         if not revision:
             this_revision = self._get_date()
         
-        filepath = self._get_config_file_path( hostname, context, this_revision )
+        filepath = self.__get_config_file_path( hostname, context, this_revision )
         
         # write config and update symlinks
         self._write_config( config, filepath )
@@ -330,8 +331,8 @@ class FileStore( Store ):
         # update the current symlink
         if not revision:
             logging.debug( "updating current symlink")
-            symlink = self._get_config_symlink_path( hostname, context )
-            self._update_symlink( filepath, symlink )
+            symlink = self.__get_config_symlink_path( hostname, context )
+            self.__update_symlink( filepath, symlink )
         
         return True
 
@@ -348,7 +349,7 @@ class FileStore( Store ):
             config = device_configurations.getConfig( context )
             # logging.error("ALL: " + str(device_configurations) )
             # logging.error("_SAVE: " + str(config._config[:5]))
-            self._save_config( hostname, config )
+            self.__save_config( hostname, config )
 
         return True
         
