@@ -1075,13 +1075,21 @@ class ConfigCiscoIos( Config ):
         return None
         
     def commit(self):
-        return self.prompt.request( 'copy running-config startup-config', 
+        # try wr mem first (copy run start doesn't update the headers on the show run)
+        okay = self.prompt.ask( 'wr mem', 
+            fail_okay=True, 
             cursor=self.prompt.cursor('mode','enable'), 
-            timeout=self.prompt.timeouts['long'], 
-            interact={
-                'question': "" # take default
-            }
+            timeout=self.prompt.timeouts['long']
         )
+        if not okay:
+            okay = self.prompt.request( 'copy running-config startup-config', 
+                        cursor=self.prompt.cursor('mode','enable'), 
+                        timeout=self.prompt.timeouts['long'], 
+                        interact={
+                            'question': "" # take default
+                        }
+                    )
+        return okay
 
 class ModelCiscoIos( Model ):
     """
