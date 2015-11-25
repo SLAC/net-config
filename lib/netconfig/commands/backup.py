@@ -222,6 +222,8 @@ class ToConsole( ToFiles ):
         parser.add_argument( '-w', '--workers', help='number of concurrent workers', default=1, type=int )
         parser.add_argument( '--quiet', help='silent output', default=False, action="store_true" )
 
+        parser.add_argument( '--commit', help='commit running config first on device', default=False, action="store_true" )
+        
         parser.add_argument( '--randomise', help='randomise order of tests', default=False, action="store_true" )
         
         parser.add_argument( '--file_store_path', help='path to config files root', default=settings['file_store']['path'] )
