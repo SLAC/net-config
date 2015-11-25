@@ -565,7 +565,7 @@ class DeviceConfigurations( object ):
             logging.debug("  that: %s" % (type(that_conf),) )
 
             # this has nothing; fake it so we don't have a None object
-            if type(this_conf) == None:
+            if this_conf == None:
                 logging.debug("reseting THIS")
                 this_conf = Configuration( '' )
             # if that_conf == None:
