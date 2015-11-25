@@ -39,10 +39,16 @@ class F5Tmsh( Configuration ):
         # cleanup
         if self._config.startswith("/tmp/"):
             logging.debug("removing %s" % (self._config,))
-            remove( self._config )
+            try:
+                remove( self._config )
+            except:
+                pass
         if self.working_dir:
             logging.debug("cleaning up " + str(self.working_dir))
-            rmtree( self.working_dir )
+            try:
+                rmtree( self.working_dir )
+            except:
+                pass
 
     def unpackage( self, ucs_file, dest ):
         logging.debug("unpacking tar %s to %s" %(ucs_file,dest))
