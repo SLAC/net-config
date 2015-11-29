@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from netconfig import NewNetConfig as NetConfig
 from netconfig.backup.storage import FileStore
+from netconfig.backup.configuration import DeviceConfigurations
 from string import Template
 
 from multiprocessing import Process, Manager
@@ -20,6 +21,7 @@ import smtplib
 import traceback
 import os
 import time
+from pprint import pformat
 
 
 def backup( hostname, netconfig_conf, mutex, storage_path, options, quiet, write_config, commit ):
@@ -243,9 +245,43 @@ class ToConsole( ToFiles ):
                 print status['diff']
             else:
                 print("%s" % (config,))
-            
+
+
+class Diff( Command, MultiprocessMixin ):
+    """
+    backup device configuration to files
+    """
+    @classmethod
+    def create_parser( cls, parser, settings, parents=[] ):
+        parser.add_argument( 'from', help='from config' )
+        parser.add_argument( 'to', help='to config' )
+        
+        parser.add_argument( '-t', '--type', help='config format', choices=[ 'F5Tmsh', 'CiscoIos'], required=True )
+
+        parser.add_argument( '-s', '--storage', help='storage_settings', default=settings.__dict__ )
+
+        parser.add_argument( '--file_store_path', help='path to config files root', default=settings['file_store']['path'] )
+
+        parser.add_argument( '--log_format', default='%(module)s %(lineno)d\t%(levelname)s\t%(message)s', required=False )
+        parser.add_argument( '--settings', default=settings, required=False )
+
+
+    def run( self, *args, **kwargs):
+
+        init_loggers(**kwargs)
+        
+        frm = DeviceConfigurations( )
+        config_class = frm.get_config_obj( kwargs['type'] )
+        frm.setConfig( kwargs['from'], config_type=kwargs['type'] )
+        
+        to = DeviceConfigurations( )
+        to.setConfig( kwargs['to'], config_type=kwargs['type'] )
+
+        print pformat( frm.diff( to ) )
+
+
 class Backup( CommandDispatcher ):
     """
     Configuration backup of device(s)
     """
-    commands = [ ToFiles, ToConsole ]
+    commands = [ ToFiles, ToConsole, Diff ]
