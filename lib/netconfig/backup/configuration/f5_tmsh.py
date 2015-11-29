@@ -1,9 +1,11 @@
 from netconfig.backup.configuration import Configuration
 
-from os import path, remove
+from os import path, remove, devnull
+import subprocess
 import tempfile
 import logging
 import tarfile
+from copy import deepcopy
 from shutil import rmtree
 
 class F5Tmsh( Configuration ):
@@ -79,7 +81,7 @@ class F5Tmsh( Configuration ):
         return True
     
     def __str__(self):
-        return '<BigIPLTMConfiguration object>'
+        return '<F5TmshConfiguration object>'
         
     def __cmp__( self, configuration ):
         """ compares against another configuration """
@@ -93,17 +95,33 @@ class F5Tmsh( Configuration ):
     def diff( self, other, ignore_comments=False ):
         """ diff between two configuration objects as an array of strings """
         # TODO: ignore comments?
-        logging.debug('  diff self: %s, other: %s' % (self, other))
-        left = self.working_dir
-        if not other == None:
+        try:
+            logging.debug('   diff tmsh self: %s at %s, other: %s at %s' % (self, self.working_dir, other, other.working_dir ))
+            left = self.working_dir
             right = other.working_dir
             cmd = 'diff -Naur %s %s' % (left,right)
-            logging.debug("running: %s" % (cmd,))
-            # diff = filecmp.dircmp( left, right ).
-            nulfp = open(os.devnull, "w")
-            res = Popen( cmd, stdout=PIPE, stderr=nulfp.fileno(), shell=True ).stdout.read()
+            logging.debug("  running: %s" % (cmd,))
+            res = []
+            with open(devnull, "w") as fnull:
+                block = { }
+                for i in subprocess.Popen( cmd.split(), stderr=fnull, stdout=subprocess.PIPE ).communicate()[0].split('\n'):
+                    # logging.info("> %s" % (i,))
+                    if i.startswith('@@'):
+                        if 'diff' in block and len(block['diff']) > 0:
+                            res.append( deepcopy(block) )
+                        block['meta'] = i
+                        block['diff'] = []
+                    elif i.startswith( 'diff ' ) or i.startswith( '--- ' ) or i.startswith( '+++ '):
+                        continue
+                    else:
+                        if 'diff' in block:
+                            block['diff'].append( i )
+                    # logging.info(" + %s" % (block,))
+                if 'diff' in block and len(block['diff']) > 0:
+                    res.append( deepcopy(block) )
             # logging.debug( ' res: %s' % (res,))
-            nulfp.close()
             return res
+        except Exception,e:
+            logging.error("Error: %s %s" % (type(e),e))
 
         return []
