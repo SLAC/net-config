@@ -8,6 +8,7 @@ from shutil import rmtree
 import os.path
 import filecmp
 from subprocess import Popen, PIPE
+from pprint import pformat
 
 from slac_utils.klasses import create_klass, path_of_module, modules_in_path
 from slac_utils.string import camel_case_to_underscore
@@ -448,7 +449,10 @@ class DeviceConfigurations( object ):
     
     def get_config_obj( self, config_component ):
         # map the name of the component to a module to import
-        name = config_component.__class__.__name__.replace('Config','')
+        if isinstance( config_component, str ):
+            name = config_component
+        else:
+            name = config_component.__class__.__name__.replace('Config','')
         config_klass = 'netconfig.backup.configuration.' + camel_case_to_underscore( name ) + '.' + name
         logging.debug("getting configuration object matched for %s -> %s" % (type(config_component),config_klass) )
         try:
@@ -565,7 +569,7 @@ class DeviceConfigurations( object ):
             logging.debug("  that: %s" % (type(that_conf),) )
 
             # this has nothing; fake it so we don't have a None object
-            if this_conf == None:
+            if type(this_conf) == None:
                 logging.debug("reseting THIS")
                 this_conf = Configuration( '' )
             # if that_conf == None:
@@ -577,6 +581,7 @@ class DeviceConfigurations( object ):
     
             # logging.error("ABOUT TO DIFF CONF: " + str( type(this_conf) ) + " to " + str( type(that_conf) ) )
             diffs = this_conf.contextual_diff( that_conf, ignore_comments=ignore_comments )
+            logging.debug( pformat(diffs) )
             for d in diffs:
                 # logging.error("DIFF: %s" % (d))
                 d['diff'] = that_conf.scrub( d['diff'] )
