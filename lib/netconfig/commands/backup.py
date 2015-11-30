@@ -207,8 +207,8 @@ class ToFiles( Command, MultiprocessMixin ):
             try:
                 report = changed_report
                 if not kwargs['diffs_only']:
-                    report = report + errored_report
-                if len(report ):
+                    report = errored_report + report
+                if len(report):
                     email( report, s['SMTP_SERVER'], s['FROM'], s['SUBJECT'], kwargs['email'] )
             except Exception, e:
                 logging.error( "Could not send email: (%s) %s" % (type(e),e) )
