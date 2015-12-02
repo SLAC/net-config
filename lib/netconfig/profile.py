@@ -107,14 +107,17 @@ class Cache(object):
                 diff = True
                 break
             else:
-                if not sorted(on_disk[g].keys()) == sorted(self.cache[g].keys()):
+                # don't bother invalidating cache
+                # if not sorted(on_disk[g].keys()) == sorted(self.cache[g].keys()):
+                #     diff = True
+                #     break
+                if not on_disk == self.cache:
                     diff = True
-                    break
-                for k in self.cache[g].keys():
-                    # logging.debug("k: %s: %s->%s" % (k,on_disk[g][k],self.cache[g][k]))
-                    if not on_disk[g][k] == self.cache[g][k]:
-                        diff = True
-                        break
+                # for k in self.cache[g].keys():
+                #     # logging.debug("  k: %s: %s->%s" % (k,on_disk[g][k],self.cache[g][k]))
+                #     if not on_disk[g][k] == self.cache[g][k]:
+                #         diff = True
+                #         break
         
         if diff:
             logging.debug("profile cache has changed")
