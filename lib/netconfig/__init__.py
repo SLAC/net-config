@@ -111,6 +111,7 @@ class NetConfig( object ):
     # parameter pointint to the lcoatin of the cache file of device -> profile maps
     profile_cache_name = 'profile_cache_file'
     profile_cache = None
+    cache_changed = False
     
     # parameter pointint to the lcoatin of the cache file of device -> profile maps
     firmware_name = 'latest_firmware'
@@ -147,7 +148,8 @@ class NetConfig( object ):
     def __del__( self ):
         for d in self.devices:
             d.disconnect()
-        self.save_profile_cache( *[ d.hostname for d in self.devices ] )
+        # if self.cache_changed:
+        #     self.save_profile_cache( *[ d.hostname for d in self.devices ] )
     
     def get_firmware_map( self ):
         """ retrieves the firmware cache"""
@@ -395,6 +397,7 @@ class NetConfig( object ):
         # check cache
         host = host.lower()
         profile_name = None
+        loaded_profile_name = None
         profile = None
         probe_string = 'auto'
         probing = False
@@ -409,6 +412,7 @@ class NetConfig( object ):
                     section = options['cache_group']
                 # logging.debug("SECTION: %s" % (section,))
                 profile_name = self.profile_cache.get( host, section=section )
+                loaded_profile_name = profile_name
                 logging.debug(" found profile_name %s in section %s" % (profile_name,section))
                 if profile_name:
                     try:
@@ -468,9 +472,11 @@ class NetConfig( object ):
                 this_section = section_map[profile_name]
             elif section:
                 this_section = section
-            logging.debug("saving to cache: %s section %s, profile %s (map %s)" % (host, this_section,profile_name,section_map))
-            self.profile_cache.store( host, profile_name, section=this_section )
-            self.save_profile_cache( host )
+            if not loaded_profile_name == profile_name:
+                self.cache_changed = True
+                logging.debug("saving to cache: %s section %s, profile %s (map %s)" % (host, this_section,profile_name,section_map))
+                self.profile_cache.store( host, profile_name, section=this_section )
+                self.save_profile_cache( host )
 
         return self._get_device( host, profile )
     
