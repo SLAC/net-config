@@ -102,24 +102,45 @@ class F5Tmsh( Configuration ):
             cmd = 'diff -Naur %s %s' % (left,right)
             logging.debug("  running: %s" % (cmd,))
             res = []
+            add = True
             with open(devnull, "w") as fnull:
                 block = { }
                 for i in subprocess.Popen( cmd.split(), stderr=fnull, stdout=subprocess.PIPE ).communicate()[0].split('\n'):
-                    # logging.info("> %s" % (i,))
-                    if i.startswith('@@'):
-                        if 'diff' in block and len(block['diff']) > 0:
-                            res.append( deepcopy(block) )
-                        block['meta'] = i
+                    logging.debug("> %s" % (i,))
+                    if i.startswith( 'diff ' ):
+                        block['meta'] = None
                         block['diff'] = []
-                    elif i.startswith( 'diff ' ) or i.startswith( '--- ' ) or i.startswith( '+++ '):
+                        block['file'] = i.split()[-1].replace( right+'/', '' )
+                    elif i.startswith('@@'):
+                        if add and 'diff' in block and len(block['diff']) > 0:
+                            res.append( deepcopy(block) )
+                        add = True
+                        block['meta'] = i
+                    elif i.startswith( '--- ' ) or i.startswith( '+++ '):
                         continue
                     else:
                         if 'diff' in block:
+                            # hack alert! we need to ignore the diffs of the last saved config time (as that will change always)
+                            # we do this by checking other fields
+                            if block['file'] == 'config/BigDB.dat' and i in ( ' display_name=Configsync.LocalConfigTime', ' display_name=LTM.ConfigTime' ):
+                                logging.debug(" ignoring timestamps for config save")
+                                add = False
                             block['diff'].append( i )
                     # logging.info(" + %s" % (block,))
-                if 'diff' in block and len(block['diff']) > 0:
+                if add and 'diff' in block and len(block['diff']) > 0:
                     res.append( deepcopy(block) )
             # logging.debug( ' res: %s' % (res,))
+            
+            # double check to ensure we're ignoring files
+            delete = []
+            for i, r in enumerate(res):
+                if r['file'] in self.ignore_files:
+                    delete.append(i)
+            # backwards
+            for i in reversed( delete ):
+                logging.debug('removing unwanted file diff at index %s' % i)
+                res.pop(i)
+
             return res
         except Exception,e:
             logging.error("Error: %s %s" % (type(e),e))
