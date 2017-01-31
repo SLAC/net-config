@@ -537,6 +537,9 @@ class PortsCiscoIos( Ports ):
             elif info['status'] in ( 'noOperMem', 'suspndByV', 'suspnd', 'channelDo' ):
                 info['state'] = 'suspended'
                 info['protocol'] = False
+            elif info['status'] in ( 'faulty' ):
+                info['state'] = 'faulty'
+                info['protocol'] = False
 
             # BUG?
             # elif info['status'] == 'routed':
