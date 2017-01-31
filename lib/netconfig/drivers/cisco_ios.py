@@ -522,7 +522,7 @@ class PortsCiscoIos( Ports ):
             elif info['status'] in ( 'notconnect', 'notconnec' ):
                 info['state'] = True
                 info['protocol'] = False
-            elif info['status'] in ( 'disabled', 'disable', 'down', 'noOperMem', 'down', 'suspndByV' ):
+            elif info['status'] in ( 'disabled', 'disable', 'down' ):
                 info['state'] = False
                 info['protocol'] = False
             elif info['status'] == 'err-disabled':
@@ -534,6 +534,9 @@ class PortsCiscoIos( Ports ):
             elif info['status'] in ( 'monitoring' ):
                 info['state'] = 'monitoring'
                 info['protocol'] = True
+            elif info['status'] in ( 'noOperMem', 'suspndByV', 'suspnd', 'channelDo' ):
+                info['state'] = 'suspended'
+                info['protocol'] = False
 
             # BUG?
             # elif info['status'] == 'routed':
